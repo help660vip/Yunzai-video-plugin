@@ -8,12 +8,12 @@
 ![JavaScript](https://img.shields.io/badge/JavaScript-ESM-F7DF1E?logo=javascript&logoColor=black)
 ![Miao-Yunzai](https://img.shields.io/badge/Miao--Yunzai-Supported-00A1D6)
 ![TRSS-Yunzai](https://img.shields.io/badge/TRSS--Yunzai-Supported-7C3AED)
-[![GitHub Stars](https://img.shields.io/github/stars/help660vip/Yunzai-video-plusin?logo=github)](https://github.com/help660vip/Yunzai-video-plusin/stargazers)
-[![GitHub Issues](https://img.shields.io/github/issues/help660vip/Yunzai-video-plusin?logo=github)](https://github.com/help660vip/Yunzai-video-plusin/issues)
+[![GitHub Stars](https://img.shields.io/github/stars/help660vip/Yunzai-video-plugin?logo=github)](https://github.com/help660vip/Yunzai-video-plugin/stargazers)
+[![GitHub Issues](https://img.shields.io/github/issues/help660vip/Yunzai-video-plugin?logo=github)](https://github.com/help660vip/Yunzai-video-plugin/issues)
 
-[项目主页](https://github.com/help660vip/Yunzai-video-plusin)
-· [问题反馈](https://github.com/help660vip/Yunzai-video-plusin/issues)
-· [版本发布](https://github.com/help660vip/Yunzai-video-plusin/releases)
+[项目主页](https://github.com/help660vip/Yunzai-video-plugin)
+· [问题反馈](https://github.com/help660vip/Yunzai-video-plugin/issues)
+· [版本发布](https://github.com/help660vip/Yunzai-video-plugin/releases)
 
 [快速安装](#安装)
 · [使用方法](#使用方法)
@@ -77,7 +77,7 @@
 ```text
 Yunzai/
 └─ plugins/
-   └─ yunzai-video-plusin/
+   └─ yunzai-video-plugin/
       ├─ index.js
       ├─ package.json
       ├─ config/
@@ -88,18 +88,18 @@ Yunzai/
 在 Yunzai 根目录执行：
 
 ```bash
-git clone --depth=1 https://github.com/help660vip/Yunzai-video-plusin.git ./plugins/yunzai-video-plusin
+git clone --depth=1 https://github.com/help660vip/Yunzai-video-plugin.git ./plugins/yunzai-video-plugin
 ```
 
-无法使用 Git 时，也可以在[项目主页](https://github.com/help660vip/Yunzai-video-plusin)
-点击 **Code → Download ZIP**，下载后解压为 `plugins/yunzai-video-plusin`。
+无法使用 Git 时，也可以在[项目主页](https://github.com/help660vip/Yunzai-video-plugin)
+点击 **Code → Download ZIP**，下载后解压为 `plugins/yunzai-video-plugin`。
 
 ### 2. 安装依赖
 
 进入插件目录安装 Node.js 依赖：
 
 ```bash
-cd Yunzai/plugins/yunzai-video-plusin
+cd Yunzai/plugins/yunzai-video-plugin
 pnpm install
 ```
 
@@ -237,7 +237,7 @@ B站清晰度可选 `16`、`32`、`64`、`80`、`112`、`116`、`120`；编码�
 进入插件目录拉取代码并重新安装依赖：
 
 ```bash
-cd Yunzai/plugins/yunzai-video-plusin
+cd Yunzai/plugins/yunzai-video-plugin
 git pull
 pnpm install
 ```
@@ -294,7 +294,7 @@ QQ / ICQQ / OneBot 场景支持视频、语音、文件和合并转发。其他�
 import {
   BaseParser,
   registerParser,
-} from "../yunzai-video-plusin/lib/public.js"
+} from "../yunzai-video-plugin/lib/public.js"
 
 class ExampleParser extends BaseParser {
   static platform = {
@@ -350,7 +350,7 @@ pnpm test
 ```
 
 遇到问题可前往
-[GitHub Issues](https://github.com/help660vip/Yunzai-video-plusin/issues) 反馈，并建议同时提供：
+[GitHub Issues](https://github.com/help660vip/Yunzai-video-plugin/issues) 反馈，并建议同时提供：
 
 - Miao-Yunzai / TRSS-Yunzai 版本与适配器类型；
 - Node.js、FFmpeg、`yt-dlp` 版本；
@@ -364,4 +364,4 @@ pnpm test
 没有隶属、授权或合作关系，也不保证第三方接口长期可用。
 
 如果这个项目对你有帮助，欢迎在
-[GitHub](https://github.com/help660vip/Yunzai-video-plusin) 点一个 Star。
+[GitHub](https://github.com/help660vip/Yunzai-video-plugin) 点一个 Star。
