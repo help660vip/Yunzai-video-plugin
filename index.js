@@ -7,6 +7,11 @@ import { config } from "./lib/core/config.js"
 import { downloader } from "./lib/core/downloader.js"
 import { handleParserEvent } from "./lib/core/engine.js"
 import { setEnabled } from "./lib/core/group-filter.js"
+import {
+  claimLazyResult,
+  clearLazyResults,
+  finishLazyResult,
+} from "./lib/core/lazy.js"
 import { log } from "./lib/core/logger.js"
 import { cacheDir } from "./lib/core/paths.js"
 import { enabledPlatforms, getParser } from "./lib/core/registry.js"
@@ -15,6 +20,7 @@ import {
   reaction,
   recordSegment,
   sendFile,
+  renderContents,
 } from "./lib/core/sender.js"
 import { commandExists, safeUnlink, sleep } from "./lib/core/utils.js"
 import { hasYtDlp, ytdlp } from "./lib/core/ytdlp.js"
@@ -31,7 +37,7 @@ export class ParserMessagePlugin extends Plugin {
   constructor() {
     super({
       name: "链接分享解析",
-      dsc: "B站、抖音、快手、微博、小红书、YouTube、TikTok、X、AcFun、NGA",
+      dsc: "支持 32 个国内外视频、社区和音乐平台的链接分享解析",
       event: "message",
       priority: 5,
       rule: [],
@@ -67,6 +73,12 @@ export class ParserCommandPlugin extends Plugin {
       { reg: "^blogin$", fnc: "bilibiliLogin", permission: "master" },
     ]
     if (hasYtDlp) rules.splice(3, 0, { reg: "^ym(?:\\s+.*)?$", fnc: "youtubeMusic" })
+    if (config.parser_lazy_download) {
+      const commandPattern = config.parser_download_command
+        .map(command => command.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+        .join("|")
+      rules.push({ reg: "^(?:" + commandPattern + ")$", fnc: "lazyDownload" })
+    }
     super({
       name: "链接解析命令",
       dsc: "解析开关及音频、B站登录命令",
@@ -109,7 +121,7 @@ export class ParserCommandPlugin extends Plugin {
         headers: parser.headers,
       })
       await this.reply(await recordSegment(audioPath))
-      if (config.parser_need_upload) await sendFile(this.e, audioPath)
+      if (config.parser_need_upload_audio) await sendFile(this.e, audioPath)
       await reaction(this.e, "done")
     } catch (error) {
       await reaction(this.e, "fail")
@@ -130,7 +142,7 @@ export class ParserCommandPlugin extends Plugin {
       }
       const audioPath = await ytdlp.downloadAudio(`https://${matched[0]}`)
       await this.reply(await recordSegment(audioPath))
-      if (config.parser_need_upload) await sendFile(this.e, audioPath)
+      if (config.parser_need_upload_audio) await sendFile(this.e, audioPath)
       await reaction(this.e, "done")
     } catch (error) {
       await reaction(this.e, "fail")
@@ -163,6 +175,32 @@ export class ParserCommandPlugin extends Plugin {
     }
     await this.reply("二维码登录超时, 请重新生成")
   }
+
+  async lazyDownload() {
+    const claimed = claimLazyResult(this.e)
+    if (claimed.state === "missing") {
+      await this.reply("没有等待下载的解析结果")
+      return
+    }
+    if (claimed.state === "expired") {
+      await this.reply("暂存内容已过期，请重新发送链接")
+      return
+    }
+    if (claimed.state === "busy") {
+      await this.reply("媒体正在下载，请稍候")
+      return
+    }
+    try {
+      await reaction(this.e, "resolving")
+      await renderContents(this.e, claimed.result)
+      finishLazyResult(claimed.key)
+      await reaction(this.e, "done")
+    } catch (error) {
+      finishLazyResult(claimed.key, true)
+      await reaction(this.e, "fail")
+      throw error
+    }
+  }
 }
 
 export class ParserMaintenancePlugin extends Plugin {
@@ -187,6 +225,7 @@ export class ParserMaintenancePlugin extends Plugin {
     const files = entries.filter(entry => entry.isFile())
     await Promise.all(files.map(entry => safeUnlink(path.join(cacheDir, entry.name))))
     resultCache.clear()
+    clearLazyResults()
     log.info(`[parser] 已清理 ${files.length} 个缓存文件`)
   }
 }

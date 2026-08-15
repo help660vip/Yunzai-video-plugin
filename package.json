@@ -1,7 +1,7 @@
 {
   "name": "yunzai-plugin-parser",
-  "version": "2.6.7",
-  "description": "Miao-Yunzai / TRSS-Yunzai 链接分享解析插件",
+  "version": "3.0.0",
+  "description": "支持 32 个平台的 Miao-Yunzai / TRSS-Yunzai 链接分享解析插件",
   "type": "module",
   "main": "index.js",
   "engines": {
@@ -9,13 +9,16 @@
   },
   "scripts": {
     "check": "node scripts/check.js",
-    "test": "node tests/run.js"
+    "test": "node tests/run.js",
+    "render:fixtures": "node scripts/render-fixtures.js"
   },
   "dependencies": {
     "cheerio": "1.0.0-rc.12",
     "emoji-regex": "9.2.2",
+    "fflate": "0.8.2",
     "got-scraping": "4.1.1",
     "node-fetch": "3.3.2",
+    "protobufjs": "7.5.4",
     "qrcode": "1.5.4",
     "yaml": "2.8.1"
   },

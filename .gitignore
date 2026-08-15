@@ -3,3 +3,4 @@ data/
 pnpm-lock.yaml
 package-lock.json
 yarn.lock
+config/ytb_cookies.txt

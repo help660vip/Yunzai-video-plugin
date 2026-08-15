@@ -1,0 +1,3 @@
+allowBuilds:
+  protobufjs: true
+  puppeteer: false
