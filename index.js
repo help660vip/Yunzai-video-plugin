@@ -3,7 +3,8 @@ import path from "node:path"
 import QRCode from "qrcode"
 
 import { resultCache } from "./lib/core/cache.js"
-import { config } from "./lib/core/config.js"
+import { scheduleCacheCleanup } from "./lib/core/cache-lifecycle.js"
+import { config, onConfigChange } from "./lib/core/config.js"
 import { downloader } from "./lib/core/downloader.js"
 import { handleParserEvent } from "./lib/core/engine.js"
 import { setEnabled } from "./lib/core/group-filter.js"
@@ -22,7 +23,7 @@ import {
   sendFile,
   renderContents,
 } from "./lib/core/sender.js"
-import { commandExists, safeUnlink, sleep } from "./lib/core/utils.js"
+import { commandExists, sleep } from "./lib/core/utils.js"
 import { hasYtDlp, ytdlp } from "./lib/core/ytdlp.js"
 import { BilibiliParser } from "./lib/parsers/bilibili.js"
 import { biliApi } from "./lib/parsers/bilibili-api.js"
@@ -32,6 +33,23 @@ await registerBuiltinParsers()
 
 const Plugin = globalThis.plugin
 if (!Plugin) throw new Error("nonebot-plugin-parser 必须由 Miao-Yunzai / TRSS-Yunzai 加载")
+
+function commandRules() {
+  const rules = [
+    { reg: "^开启解析$", fnc: "enableParser", permission: "admin" },
+    { reg: "^关闭解析$", fnc: "disableParser", permission: "admin" },
+    { reg: "^bm(?:\\s+.*)?$", fnc: "bilibiliMusic" },
+    { reg: "^blogin$", fnc: "bilibiliLogin", permission: "master" },
+  ]
+  if (hasYtDlp) rules.splice(3, 0, { reg: "^ym(?:\\s+.*)?$", fnc: "youtubeMusic" })
+  if (config.parser_lazy_download) {
+    const commandPattern = config.parser_download_command
+      .map(command => command.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+      .join("|")
+    rules.push({ reg: "^(?:" + commandPattern + ")$", fnc: "lazyDownload" })
+  }
+  return rules
+}
 
 export class ParserMessagePlugin extends Plugin {
   constructor() {
@@ -45,6 +63,8 @@ export class ParserMessagePlugin extends Plugin {
   }
 
   async init() {
+    const cleanup = await scheduleCacheCleanup({ force: true, reason: "startup" })
+    log.info(`[parser] 启动缓存检查完成：清理 ${cleanup.deletedFiles || 0} 个文件`)
     log.info(`[parser] 启用平台: ${enabledPlatforms().join(", ")}`)
     if (!commandExists("ffmpeg")) {
       log.warn("[parser] 未检测到 ffmpeg，音视频合并、转码和 GIF 功能将不可用")
@@ -66,25 +86,17 @@ export class ParserMessagePlugin extends Plugin {
 
 export class ParserCommandPlugin extends Plugin {
   constructor() {
-    const rules = [
-      { reg: "^开启解析$", fnc: "enableParser", permission: "admin" },
-      { reg: "^关闭解析$", fnc: "disableParser", permission: "admin" },
-      { reg: "^bm(?:\\s+.*)?$", fnc: "bilibiliMusic" },
-      { reg: "^blogin$", fnc: "bilibiliLogin", permission: "master" },
-    ]
-    if (hasYtDlp) rules.splice(3, 0, { reg: "^ym(?:\\s+.*)?$", fnc: "youtubeMusic" })
-    if (config.parser_lazy_download) {
-      const commandPattern = config.parser_download_command
-        .map(command => command.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
-        .join("|")
-      rules.push({ reg: "^(?:" + commandPattern + ")$", fnc: "lazyDownload" })
-    }
     super({
       name: "链接解析命令",
       dsc: "解析开关及音频、B站登录命令",
       event: "message",
       priority: 3,
-      rule: rules,
+      rule: commandRules(),
+    })
+    this.stopConfigWatch = onConfigChange(() => {
+      this.rule = commandRules()
+      resultCache.clear()
+      clearLazyResults()
     })
   }
 
@@ -177,6 +189,13 @@ export class ParserCommandPlugin extends Plugin {
   }
 
   async lazyDownload() {
+    const command = String(this.e?.msg || "").trim()
+    if (
+      !config.parser_lazy_download ||
+      !config.parser_download_command.includes(command)
+    ) {
+      return false
+    }
     const claimed = claimLazyResult(this.e)
     if (claimed.state === "missing") {
       await this.reply("没有等待下载的解析结果")
@@ -221,11 +240,12 @@ export class ParserMaintenancePlugin extends Plugin {
   }
 
   async cleanCache() {
-    const entries = await fs.promises.readdir(cacheDir, { withFileTypes: true })
-    const files = entries.filter(entry => entry.isFile())
-    await Promise.all(files.map(entry => safeUnlink(path.join(cacheDir, entry.name))))
+    const cleanup = await scheduleCacheCleanup({ force: true, reason: "daily" })
     resultCache.clear()
     clearLazyResults()
-    log.info(`[parser] 已清理 ${files.length} 个缓存文件`)
+    log.info(
+      `[parser] 缓存维护完成：清理 ${cleanup.deletedFiles || 0} 个文件、` +
+      `${cleanup.removedDirectories || 0} 个空目录`,
+    )
   }
 }

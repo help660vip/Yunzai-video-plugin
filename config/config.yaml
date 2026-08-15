@@ -135,3 +135,15 @@ parser_r18_platforms:
 
 # X / Twitter 的 possibly_sensitive 标志是否直接拦截。
 parser_block_x_sensitive: true
+
+# 缓存文件保留时间（小时）；启动、定时任务及解析期间都会自动检查。
+parser_cache_retention_hours: 24
+
+# 缓存目录最大容量（MB）；超过后从最旧且未使用的文件开始清理。
+parser_cache_max_mb: 1024
+
+# 同一群内是否静默去除重复解析。
+parser_dedup_enabled: true
+
+# 相同链接或同一平台内容的去重窗口（秒）。
+parser_dedup_window_seconds: 30
