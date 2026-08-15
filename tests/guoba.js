@@ -24,7 +24,7 @@ const temporaryDir = fs.mkdtempSync(path.join(os.tmpdir(), "yunzai-guoba-"))
 const temporaryConfig = path.join(temporaryDir, "config.yaml")
 const initial = {
   ...DEFAULT_CONFIG,
-  parser_bili_ck: "SESSDATA=fixture-secret",
+  parser_bili_ck: "fixture-cookie-value",
   preserved_unknown_key: "keep",
 }
 fs.writeFileSync(temporaryConfig, YAML.stringify(initial), "utf8")
@@ -47,7 +47,7 @@ try {
   const support = supportGuoba()
   const formData = support.configInfo.getConfigData()
   assert.equal(formData.parser_bili_ck, GUOBA_SECRET_MASK)
-  assert.equal(JSON.stringify(formData).includes("fixture-secret"), false)
+  assert.equal(JSON.stringify(formData).includes("fixture-cookie-value"), false)
 
   let captured
   const Result = {

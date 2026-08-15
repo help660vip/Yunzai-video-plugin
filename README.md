@@ -148,7 +148,15 @@ R18 拦截默认开启，但**只检查配置列表内的海外平台**：`twitt
 
 ## ⚙️ 配置
 
-配置文件位于 [`config/config.yaml`](config/config.yaml)，修改后重启 Yunzai。下方仅概览常用分组；完整字段、默认值和注释请展开或直接查看配置文件。
+配置文件位于 [`config/config.yaml`](config/config.yaml)。手动编辑文件后需重启 Yunzai；通过锅巴网页保存则会立即热更新，无需重启。下方仅概览常用分组；完整字段、默认值和注释请展开或直接查看配置文件。
+
+### 锅巴网页配置
+
+安装并启动 [Guoba-Plugin](https://github.com/guoba-yunzai/guoba-plugin) 后，后台会自动发现 **Yunzai Video Plugin**。页面可调整全部解析配置，包括平台启停、Cookie、下载、缓存、去重、渲染及海外 R18 策略。
+
+- 保存成功后配置立即生效，平台和懒下载命令不需要重启。
+- Cookie 与带认证信息的代理只显示遮罩；不重新填写就不会覆盖原值，清空输入则删除该配置。
+- 已知的其他机器人账号可以加入 `parser_blacklist_users`，避免机器人之间互相解析链接。
 
 <details>
 <summary><strong>完整配置说明</strong></summary>
@@ -161,6 +169,8 @@ R18 拦截默认开启，但**只检查配置列表内的海外平台**：`twitt
 | 展示 | `parser_render_type`、`parser_day_range`、字体、Emoji、URL、二维码 | 信息卡和附加内容 |
 | 下载 | `parser_lazy_download*`、`parser_download_command`、`parser_live_photo` | 懒下载及 Live Photo |
 | 过滤 | `parser_disabled_platforms`、`parser_blacklist_users`、群名单、R18 配置 | 解析范围和安全门 |
+| 缓存 | `parser_cache_retention_hours`、`parser_cache_max_mb` | 默认保留 24 小时，最大 1 GiB |
+| 去重 | `parser_dedup_enabled`、`parser_dedup_window_seconds` | 同机器人、同群默认 30 秒静默去重 |
 | 平台 | B站画质 / 编码 / CDN 等 | 平台专用选项 |
 
 默认是“直接解析并下载”：
@@ -192,7 +202,7 @@ parser_download_command:
 
 - `blogin` 获取的 B站凭据保存在 `data/bilibili_cookies.json`。
 - YouTube Cookie 会转换到 `config/ytb_cookies.txt` 供 `yt-dlp` 使用。
-- 群开关、媒体缓存和渲染缓存位于 `data/`，插件每天 `01:00` 自动清理缓存。
+- 群开关、媒体缓存和渲染缓存位于 `data/`。插件启动、每天 `01:00` 及解析期间都会检查缓存；默认删除超过 24 小时的文件，并在超过 1 GiB 时优先清理最旧文件。
 - `data/` 被 Git 忽略，但 `config/config.yaml` 会被版本控制追踪，不要写入准备公开的真实凭据。
 
 ## 🎉 使用
@@ -213,10 +223,12 @@ parser_download_command:
 - `parser_group_blacklist_enabled: true`：群黑名单模式，默认所有群开启，名单内关闭。
 - `parser_group_blacklist_enabled: false`：群白名单模式，默认所有群关闭，名单内开启。
 - 用户黑名单 `parser_blacklist_users` 优先于群名单。
+- 同一机器人账号在同一群内，30 秒内解析到相同平台内容 ID 时只发送一次；短链和原始链接也会归并。不同群和不同私聊用户互不影响。
+- 本插件只能阻止自身重复响应，无法控制其他独立机器人是否同时回复原消息；请把已知机器人账号加入用户黑名单。
 
 ## 🧩 自定义解析器
 
-其他 Yunzai 插件可以从 [`lib/public.js`](lib/public.js) 导入公共模型、`Creator`、`BaseParser` 和注册器。旧版 `ParseResult`、`PathTask`、`contents`、`text`、`graphics` 调用方式继续有效；新解析器可使用有序 `content`、评论、统计、投票、贴纸和 Live Photo。
+其他 Yunzai 插件可以从 [`lib/public.js`](lib/public.js) 导入公共模型、`Creator`、`BaseParser` 和注册器。旧版 `ParseResult`、`PathTask`、`contents`、`text`、`graphics` 调用方式继续有效；新解析器可使用有序 `content`、评论、统计、投票、贴纸和 Live Photo，并通过可选 `contentId` 提供稳定的内容去重标识。
 
 ```js
 import { BaseParser, registerParser } from "../yunzai-video-plugin/lib/public.js"
@@ -231,6 +243,7 @@ class ExampleParser extends BaseParser {
 
   async parse(match) {
     return this.result({
+      contentId: match.groups.id,
       title: match.groups.id,
       author: this.createAuthor("示例作者"),
       content: [this.createVideo("https://example.com/video.mp4")],
