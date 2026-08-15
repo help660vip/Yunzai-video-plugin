@@ -10,8 +10,23 @@ import { StreamDownloader } from "../lib/core/downloader.js"
 import { handleParserEvent } from "../lib/core/engine.js"
 import { IgnoreError } from "../lib/core/errors.js"
 import { groupKey, groupSet, isEnabled } from "../lib/core/group-filter.js"
-import { extractMessageText } from "../lib/core/message.js"
-import { ParseResult, PathTask } from "../lib/core/model.js"
+import { extractMessageText, extractMessageTexts } from "../lib/core/message.js"
+import {
+  GraphicContent,
+  LinkContent,
+  ParseResult,
+  PathTask,
+  PollContent,
+  QuoteContent,
+} from "../lib/core/model.js"
+import {
+  claimLazyResult,
+  clearLazyResults,
+  finishLazyResult,
+  lazySessionCount,
+  storeLazyResult,
+} from "../lib/core/lazy.js"
+import * as publicApi from "../lib/public.js"
 import { cacheDir } from "../lib/core/paths.js"
 import {
   BaseParser,
@@ -21,6 +36,10 @@ import {
   registerParser,
 } from "../lib/core/registry.js"
 import { sendFile } from "../lib/core/sender.js"
+import {
+  BLOCKED_CONTENT_MESSAGE,
+  shouldBlockResult,
+} from "../lib/core/safety.js"
 import { ytdlp } from "../lib/core/ytdlp.js"
 import { closeRenderer, renderAndSend } from "../lib/render/renderer.js"
 import { AcfunParser, selectAcfunRepresentation } from "../lib/parsers/acfun.js"
@@ -38,7 +57,37 @@ import { TwitterParser } from "../lib/parsers/twitter.js"
 import { midToId, WeiboParser } from "../lib/parsers/weibo.js"
 import { selectXhsVideo, XiaohongshuParser } from "../lib/parsers/xiaohongshu.js"
 import { YouTubeParser } from "../lib/parsers/youtube.js"
+import {
+  isBiliPcdn,
+  sanitizeBiliStreamUrl,
+} from "../lib/parsers/bilibili-cdn.js"
 import { http } from "../lib/core/http.js"
+import {
+  BuffParser,
+  CoolapkParser,
+  DoubanParser,
+  DoubaoParser,
+  DsParser,
+  DuitangParser,
+  FiveEPlayParser,
+  HeyboxParser,
+  HupuParser,
+  IlluParser,
+  LinuxDoParser,
+  LofterParser,
+  MiyousheParser,
+  TapTapParser,
+  TiebaParser,
+  WmpvpParser,
+  ZhihuParser,
+  ZlbParser,
+} from "../lib/parsers/communities.js"
+import {
+  KugouParser,
+  KuwoParser,
+  NeteaseParser,
+  QsMusicParser,
+} from "../lib/parsers/music.js"
 
 const fixtureDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "fixtures")
 const fixture = name => fs.readFileSync(path.join(fixtureDir, name), "utf8")
@@ -95,6 +144,19 @@ test("QQ JSON 卡片解析失败时不回退普通文本", () => {
     }),
     null,
   )
+})
+
+test("引用消息中的链接可作为解析候选", async () => {
+  const values = await extractMessageTexts({
+    message: [{ type: "text", text: "解析" }],
+    source: {
+      message: [{ type: "text", text: "https://www.bilibili.com/video/BV1xx411c7mD" }],
+    },
+  })
+  assert.deepEqual(values, [
+    "解析",
+    "https://www.bilibili.com/video/BV1xx411c7mD",
+  ])
 })
 
 test("普通下载严格检查 Content-Length 并写入缓存", async () => {
@@ -154,6 +216,90 @@ test("内置解析器注册并匹配原触发边界", async () => {
   )
   assert.equal(matchUrl("https://twitter.com/example/status/123"), null)
   assert.equal(matchUrl("https://www.xiaohongshu.com/explore/abc123"), null)
+})
+
+test("全部 32 个平台均注册并路由真实分享 URL", async () => {
+  await registerBuiltinParsers()
+  const samples = {
+    acfun: "https://www.acfun.cn/v/ac123",
+    bilibili: "BV1xx411c7mD",
+    buff: "https://buff.163.com/s/news-detail_share.html?article_id=1&comment_type=228",
+    coolapk: "https://www.coolapk.com/feed/1",
+    douban: "https://m.douban.com/group/topic/1",
+    doubao: "https://www.doubao.com/video-sharing?share_id=a&video_id=b",
+    douyin: "https://www.douyin.com/video/1234567890",
+    ds: "https://ds.163.com/feed/abc",
+    duitang: "https://www.duitang.com/blog/?id=1",
+    fiveeplay: "https://csgo.5eplay.com/forum/forum/1",
+    heybox: "https://www.xiaoheihe.cn/app/bbs/link/abc",
+    hupu: "https://bbs.hupu.com/1.html",
+    illu: "https://illund.com/share.html?al=articleId%3Dabc",
+    kuaishou: "https://v.kuaishou.com/abc",
+    kugou: "https://t1.kugou.com/abc",
+    kuwo: "https://www.kuwo.cn/play_detail/1",
+    linuxdo: "https://linux.do/t/topic/1",
+    lofter: "https://demo.lofter.com/post/abc_def",
+    miyoushe: "https://www.miyoushe.com/ys/article/1",
+    nga: "https://bbs.nga.cn/read.php?tid=1",
+    netease: "https://music.163.com/song?id=1",
+    qsmusic: "https://qishui.douyin.com/s/abc/",
+    taptap: "https://www.taptap.cn/moment/1",
+    tieba: "https://tieba.baidu.com/p/1",
+    tiktok: "https://www.tiktok.com/@demo/video/1",
+    twitter: "https://x.com/demo/status/1",
+    weibo: "https://m.weibo.cn/status/123",
+    wmpvp: "https://news.wmpvp.com/community-detail.html?id=1",
+    xiaohongshu: "https://xhslink.com/abc",
+    youtube: "https://youtu.be/abcdefghijk",
+    zhihu: "https://www.zhihu.com/question/1/answer/2",
+    zlb: "https://zlb.ink/t/topic/1",
+  }
+  assert.equal(Object.keys(samples).length, 32)
+  for (const [platform, url] of Object.entries(samples)) {
+    assert.equal(matchUrl(url)?.parser.platform.name, platform, platform + " 路由失败")
+  }
+})
+
+test("18 个社区平台使用固定 HTML 夹具构造统一富内容", () => {
+  const html = [
+    "<html><head>",
+    '<meta property="og:title" content="夹具标题">',
+    '<meta property="og:description" content="夹具正文">',
+    '<meta property="og:image" content="https://img.invalid/cover.jpg">',
+    '<script type="application/ld+json">',
+    JSON.stringify({
+      headline: "结构化标题",
+      author: { name: "夹具作者" },
+      datePublished: "2026-01-01T00:00:00Z",
+    }),
+    "</script></head></html>",
+  ].join("")
+  const classes = [
+    BuffParser,
+    CoolapkParser,
+    DoubanParser,
+    DoubaoParser,
+    DsParser,
+    DuitangParser,
+    FiveEPlayParser,
+    HeyboxParser,
+    HupuParser,
+    IlluParser,
+    LinuxDoParser,
+    LofterParser,
+    MiyousheParser,
+    TapTapParser,
+    TiebaParser,
+    WmpvpParser,
+    ZhihuParser,
+    ZlbParser,
+  ]
+  for (const ParserClass of classes) {
+    const result = new ParserClass().collectHtml(html, "https://fixture.invalid/post")
+    assert.equal(result.title, "夹具标题")
+    assert.equal(result.author.name, "夹具作者")
+    assert.equal(result.imageContents.length, 1)
+  }
 })
 
 test("短链重定向使用匹配结果中的目标方法", async () => {
@@ -217,6 +363,21 @@ test("B站选流遵循清晰度和编码顺序", () => {
   )
   assert.equal(video.baseUrl, "avc")
   assert.equal(audio.baseUrl, "a2")
+})
+
+test("B站 PCDN 流优先非 PCDN 备用地址并重写可信 CDN", () => {
+  assert.equal(isBiliPcdn("https://a.mcdn.bilivideo.cn/pcdn/video.m4s"), true)
+  const value = sanitizeBiliStreamUrl(
+    {
+      baseUrl: "https://a.mcdn.bilivideo.cn/pcdn/video.m4s",
+      backupUrl: ["https://clean.example/video.m4s?token=fixture"],
+    },
+    { domain: "upos-sz-mirrorcos.bilivideo.com" },
+  )
+  assert.equal(
+    value,
+    "https://upos-sz-mirrorcos.bilivideo.com/video.m4s?token=fixture",
+  )
 })
 
 test("AcFun 清晰度取接口返回的首个受支持项", () => {
@@ -592,6 +753,411 @@ test("Yunzai 入口可由标准 plugin/segment 全局加载", async () => {
   assert.equal(new entry.ParserCommandPlugin().priority, 3)
   assert.equal(new entry.ParserMaintenancePlugin().task.cron, "0 0 1 * * *")
   assert.ok(getParser(BilibiliParser))
+})
+
+test("公共富内容 API 保持有序内容并支持评论、投票、链接、贴纸和 Live Photo", () => {
+  const videoTask = new PathTask(async () => "video.mp4", "fixture-video")
+  const imageTask = new PathTask(async () => "image.jpg", "fixture-image")
+  const stickerTask = new PathTask(async () => "sticker.webp", "fixture-sticker")
+  const link = publicApi.Creator.link("https://example.invalid/card", {
+    title: "链接卡",
+    siteName: "Fixture",
+    description: "链接描述",
+  })
+  const sticker = publicApi.Creator.sticker(stickerTask, {
+    size: "small",
+    description: "贴纸描述",
+  })
+  const livePhoto = publicApi.Creator.livePhoto(videoTask, imageTask, {
+    loop: 2,
+    cacheKey: "fixture-live",
+  })
+  const poll = publicApi.Creator.poll({
+    title: "选择",
+    options: [
+      publicApi.Creator.pollOption("A", 3),
+      publicApi.Creator.pollOption("B", 1),
+    ],
+    totalVoters: 4,
+  })
+  const reply = publicApi.Creator.comment({
+    author: publicApi.Creator.author("回复者"),
+    content: ["楼中楼回复"],
+    parentAuthor: "主评论者",
+  })
+  const comment = publicApi.Creator.comment({
+    author: publicApi.Creator.author("主评论者"),
+    content: ["主评论"],
+    replies: [reply],
+  })
+  const content = ["第一段", link, sticker, livePhoto, poll, "最后一段"]
+  const result = new publicApi.ParseResult({
+    platform: { name: "fixture", displayName: "Fixture" },
+    content,
+    comments: [comment],
+  })
+
+  assert.equal(publicApi.LinkContent, LinkContent)
+  assert.equal(publicApi.PollContent, PollContent)
+  assert.equal(publicApi.QuoteContent, QuoteContent)
+  assert.deepEqual(result.orderedContent, content)
+  assert.equal(result.comments[0].replies[0].parentAuthor, "主评论者")
+  assert.equal(poll.optionVoteTotal, 4)
+  assert.equal(poll.optionPercentage(poll.options[0]), 75)
+  assert.equal(link.title, "链接卡")
+  assert.equal(sticker instanceof publicApi.StickerContent, true)
+  assert.equal(sticker.needSend, false)
+  assert.equal(livePhoto instanceof publicApi.LivePhotoContent, true)
+  assert.equal(livePhoto.loop, 2)
+  assert.equal(livePhoto.baseImage, imageTask)
+  assert.equal(livePhoto.pathTask, videoTask)
+})
+
+test("注册器查询参数支持默认值、可选项和规则校验", () => {
+  class ParamsFixtureParser extends BaseParser {
+    static platform = { name: "params-fixture", displayName: "Params Fixture" }
+    static handlers = [
+      {
+        keyword: "params.invalid",
+        pattern: /params\.invalid\/item[^\s<]*/i,
+        params: {
+          id: { asInt: true },
+          kind: { equals: "post" },
+          view: { default: "full", oneOf: ["full", "compact"] },
+          page: { required: false, asInt: true },
+        },
+        method: "parse",
+      },
+    ]
+
+    parse(match, route) {
+      return this.result({ title: route.params.id })
+    }
+  }
+  registerParser(ParamsFixtureParser)
+
+  const valid = matchUrl("https://params.invalid/item?kind=post&id=42")
+  assert.equal(valid.parser.platform.name, "params-fixture")
+  assert.deepEqual(valid.params, { kind: "post", id: "42", view: "full" })
+  assert.equal(
+    matchUrl("https://params.invalid/item?kind=post&id=42&view=compact&page=2")
+      .params.page,
+    "2",
+  )
+  assert.equal(matchUrl("https://params.invalid/item?kind=post&id=bad"), null)
+  assert.equal(matchUrl("https://params.invalid/item?kind=video&id=42"), null)
+  assert.equal(matchUrl("https://params.invalid/item?kind=post&id=42&view=wide"), null)
+  assert.equal(matchUrl("https://params.invalid/item?kind=post&id=42&page=nope"), null)
+  assert.equal(matchUrl("https://params.invalid/item?kind=post"), null)
+})
+
+test("四个音乐平台用固定响应构造音乐卡与懒音频任务", async () => {
+  const originalJson = http.json
+  const originalRequest = http.request
+  try {
+    http.json = async url => {
+      if (url.endsWith("/getSongInfo")) {
+        return {
+          code: 200,
+          data: {
+            name: "网易云夹具",
+            singer: "歌手 A",
+            album: "专辑 A",
+            picimg: "https://img.invalid/netease.jpg",
+            duration: "01:02",
+          },
+        }
+      }
+      if (url.endsWith("/getSongLyric")) {
+        return { code: 200, data: { lrc: "第一句\n第二句" } }
+      }
+      if (url.endsWith("/getSongUrl")) {
+        return { code: 200, data: { url: "https://audio.invalid/netease.mp3" } }
+      }
+      throw new Error("unexpected netease request: " + url)
+    }
+    const netease = await new NeteaseParser().parse([
+      "music.163.com/song?id=101",
+      "101",
+    ])
+    assert.equal(netease.title, "网易云夹具")
+    assert.equal(netease.audioContents[0].duration, 62)
+    assert.equal(netease.audioContents[0].pathTask.url, "https://audio.invalid/netease.mp3")
+    assert.match(netease.text, /第二句/)
+
+    http.request = async () => ({
+      url: "https://www.kugou.com/song/?hash=HASH101",
+      text: async () => "",
+    })
+    http.json = async url => {
+      if (url.includes("getSongInfo.php")) {
+        return {
+          errcode: 0,
+          url: "https://audio.invalid/kugou.mp3",
+          songName: "酷狗夹具",
+          singerName: "歌手 B",
+          albumName: "专辑 B",
+          album_img: "https://img.invalid/{size}.jpg",
+          timeLength: 12,
+          bitRate: 320,
+        }
+      }
+      if (url.includes("krcs.kugou.com/search")) return { candidates: [] }
+      throw new Error("unexpected kugou request: " + url)
+    }
+    const kugou = await new KugouParser().parse([
+      "https://www.kugou.com/song/?hash=HASH101",
+    ])
+    assert.equal(kugou.title, "酷狗夹具")
+    assert.equal(kugou.audioContents[0].duration, 12)
+    assert.equal(kugou.audioContents[0].pathTask.url, "https://audio.invalid/kugou.mp3")
+
+    http.json = async (url, options) => {
+      assert.equal(url, "https://parse-api.sokoko.org/api/kuwo/songs/")
+      assert.deepEqual(options.params, { music_id: "303", quality: "320k" })
+      return {
+        code: 200,
+        data: {
+          title: "酷我夹具",
+          artist: "歌手 C",
+          album: "专辑 C",
+          cover: "https://img.invalid/kuwo.jpg",
+          download_url: "https://audio.invalid/kuwo.mp3",
+          duration_seconds: 33,
+          lyric: "酷我歌词",
+          quality: { name: "320K" },
+        },
+      }
+    }
+    const kuwo = await new KuwoParser().parse([
+      "www.kuwo.cn/play_detail/303",
+      "303",
+    ])
+    assert.equal(kuwo.title, "酷我夹具")
+    assert.equal(kuwo.audioContents[0].pathTask.url, "https://audio.invalid/kuwo.mp3")
+    assert.equal(kuwo.extra.album, "专辑 C")
+
+    const routerData = {
+      loaderData: {
+        page: {
+          track_id: "404",
+          audioWithLyricsOption: {
+            trackName: "汽水夹具",
+            artistName: "歌手 D",
+            coverURL: "https://img.invalid/qishui.jpg",
+            url: "https://audio.invalid/qishui.mp3",
+            duration: 44,
+            trackInfo: { album: { name: "专辑 D" } },
+            lyrics: {
+              sentences: [{ text: "汽水歌词一" }, { words: [{ text: "二" }] }],
+            },
+          },
+        },
+      },
+    }
+    http.request = async () => ({
+      url: "https://qishui.douyin.com/s/fixture/",
+      text: async () =>
+        "<script>window._ROUTER_DATA = " + JSON.stringify(routerData) + ";</script>",
+    })
+    const qishui = await new QsMusicParser().parse([
+      "https://qishui.douyin.com/s/fixture/",
+    ])
+    assert.equal(qishui.title, "汽水夹具")
+    assert.equal(qishui.audioContents[0].duration, 44)
+    assert.equal(qishui.audioContents[0].pathTask.url, "https://audio.invalid/qishui.mp3")
+    assert.equal(qishui.text, "汽水歌词一\n二")
+  } finally {
+    http.json = originalJson
+    http.request = originalRequest
+  }
+})
+
+test("懒下载会话按用户隔离并处理忙碌、保留、完成和过期", () => {
+  const previousTimeout = config.parser_lazy_download_timeout
+  const firstEvent = {
+    user_id: 1001,
+    group_id: 2001,
+    adapter_name: "OneBot V11",
+  }
+  const secondEvent = {
+    user_id: 1002,
+    group_id: 2001,
+    adapter_name: "OneBot V11",
+  }
+  const firstResult = { title: "first" }
+  try {
+    clearLazyResults()
+    config.parser_lazy_download_timeout = 30
+    assert.equal(storeLazyResult(firstEvent, firstResult), true)
+    assert.equal(lazySessionCount(), 1)
+    assert.equal(claimLazyResult(secondEvent).state, "missing")
+
+    const ready = claimLazyResult(firstEvent)
+    assert.equal(ready.state, "ready")
+    assert.equal(ready.result, firstResult)
+    assert.equal(claimLazyResult(firstEvent).state, "busy")
+
+    finishLazyResult(ready.key, true)
+    const retried = claimLazyResult(firstEvent)
+    assert.equal(retried.state, "ready")
+    finishLazyResult(retried.key)
+    assert.equal(claimLazyResult(firstEvent).state, "missing")
+    assert.equal(lazySessionCount(), 0)
+
+    config.parser_lazy_download_timeout = 0
+    assert.equal(storeLazyResult(firstEvent, firstResult), true)
+    assert.equal(claimLazyResult(firstEvent).state, "expired")
+    assert.equal(lazySessionCount(), 0)
+  } finally {
+    clearLazyResults()
+    config.parser_lazy_download_timeout = previousTimeout
+  }
+})
+
+async function withR18Configuration(fn) {
+  const previous = {
+    enabled: config.parser_r18_filter_enabled,
+    platforms: config.parser_r18_platforms,
+    blockX: config.parser_block_x_sensitive,
+  }
+  config.parser_r18_filter_enabled = true
+  config.parser_r18_platforms = ["twitter", "youtube", "tiktok"]
+  config.parser_block_x_sensitive = true
+  try {
+    return await fn()
+  } finally {
+    config.parser_r18_filter_enabled = previous.enabled
+    config.parser_r18_platforms = previous.platforms
+    config.parser_block_x_sensitive = previous.blockX
+  }
+}
+
+test("R18: X possibly_sensitive 元数据会被拦截", async () => {
+  await withR18Configuration(async () => {
+    const result = new TwitterParser().collect({
+      text: "普通文字",
+      user_name: "fixture",
+      date_epoch: 1,
+      possibly_sensitive: true,
+      media_extended: [],
+    })
+    assert.equal(shouldBlockResult(result), true)
+  })
+})
+
+test("R18: YouTube age_limit 18 会被拦截", async () => {
+  await withR18Configuration(async () => {
+    const original = ytdlp.extractInfo
+    const parser = new YouTubeParser()
+    parser.fetchAuthor = async () => parser.createAuthor("fixture")
+    ytdlp.extractInfo = async () => ({
+      title: "受年龄限制的视频",
+      channelId: "channel",
+      duration: 10,
+      timestamp: 1,
+      thumbnail: "https://img.invalid/youtube.jpg",
+      ageLimit: 18,
+      tags: [],
+      categories: [],
+    })
+    try {
+      const result = await parser.parseVideo("https://youtu.be/abcdefghijk")
+      assert.equal(result.safety.ageLimit, 18)
+      assert.equal(shouldBlockResult(result), true)
+    } finally {
+      ytdlp.extractInfo = original
+    }
+  })
+})
+
+test("R18: TikTok R18 标签会被拦截", async () => {
+  await withR18Configuration(async () => {
+    const original = ytdlp.extractInfo
+    ytdlp.extractInfo = async () => ({
+      title: "fixture",
+      description: "ordinary",
+      channel: "fixture",
+      duration: 5,
+      timestamp: 1,
+      thumbnail: "https://img.invalid/tiktok.jpg",
+      ageLimit: 0,
+      tags: ["R18"],
+      categories: [],
+    })
+    try {
+      const match = TikTokParser.handlers[0].pattern.exec(
+        "www.tiktok.com/@fixture/video/1",
+      )
+      const result = await new TikTokParser().parse(match)
+      assert.equal(shouldBlockResult(result), true)
+    } finally {
+      ytdlp.extractInfo = original
+    }
+  })
+})
+
+test("R18: 海外安全内容正常放行", async () => {
+  await withR18Configuration(async () => {
+    const result = new ParseResult({
+      platform: { name: "youtube", displayName: "YouTube" },
+      title: "Landscape photography",
+      text: "A family friendly tutorial",
+      safety: { rating: "safe", ageLimit: 0 },
+      extra: { tags: ["photography", "tutorial"] },
+    })
+    assert.equal(shouldBlockResult(result), false)
+  })
+})
+
+test("R18: 敏感引用和转发内容递归拦截整条结果", async () => {
+  await withR18Configuration(async () => {
+    const quoted = new ParseResult({
+      platform: { name: "twitter", displayName: "X" },
+      content: [new QuoteContent({ text: "NSFW quoted post" })],
+    })
+    assert.equal(shouldBlockResult(quoted), true)
+
+    const reposted = new ParseResult({
+      platform: { name: "twitter", displayName: "X" },
+      title: "safe root",
+      repost: new ParseResult({
+        platform: { name: "twitter", displayName: "X" },
+        safety: { rating: "adult" },
+      }),
+    })
+    assert.equal(shouldBlockResult(reposted), true)
+  })
+})
+
+test("R18: 国内平台即使含同类关键词也完全绕过", async () => {
+  await withR18Configuration(async () => {
+    const result = new ParseResult({
+      platform: { name: "bilibili", displayName: "哔哩哔哩" },
+      title: "NSFW R18 成人内容",
+      safety: { rating: "adult", ageLimit: 18, sensitive: true },
+    })
+    assert.equal(shouldBlockResult(result), false)
+  })
+})
+
+test("R18: 拦截判断不会启动任何 PathTask", async () => {
+  await withR18Configuration(async () => {
+    let started = 0
+    const task = new PathTask(async () => {
+      started += 1
+      return "never"
+    })
+    const result = new ParseResult({
+      platform: { name: "twitter", displayName: "X" },
+      safety: { sensitive: true },
+      content: [new GraphicContent(task)],
+    })
+    assert.equal(shouldBlockResult(result), true)
+    await Promise.resolve()
+    assert.equal(started, 0)
+    assert.equal(task.promise, null)
+  })
 })
 
 let failures = 0

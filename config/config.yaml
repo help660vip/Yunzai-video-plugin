@@ -1,34 +1,65 @@
-# B站 Cookie。可留空并使用 blogin 私聊扫码登录。
+# Yunzai Video Plugin 3.0 配置
+# 修改后请重启 Yunzai。Cookie / Token 请勿提交到公开仓库。
+
+# B站 Cookie；可留空并使用 blogin 私聊扫码登录。
 parser_bili_ck: null
 
-# YouTube Cookie，使用浏览器 Cookie 字符串格式。
+# YouTube 浏览器 Cookie 字符串，供 yt-dlp 使用。
 parser_ytb_ck: null
 
 # 小红书 Cookie。
 parser_xhs_ck: null
 
-# 仅作用于 YouTube / TikTok 的 yt-dlp 代理。
+# 知乎 Cookie；完整回答通常需要登录态，建议包含 z_c0。
+parser_zhihu_ck: null
+
+# Linux Do Cookie；登录后才能读取部分受限主题。
+parser_linuxdo_ck: null
+
+# 仅作用于 YouTube / TikTok 的 yt-dlp 代理，例如 http://127.0.0.1:7890。
 parser_proxy: null
 
-# 音频命令发送语音后是否再上传文件。
+# 兼容旧版的音视频上传总开关。
+# 未显式设置下面两个独立开关时，它会同时控制音频和视频上传。
 parser_need_upload: false
 
-# 图片、音频、视频、文件是否转换为 base64 消息段。
+# 音频解析后是否额外上传群文件；显式设置时优先于总开关。
+parser_need_upload_audio: false
+
+# 视频解析后是否在普通视频消息之外额外上传文件；显式设置时优先于总开关。
+parser_need_upload_video: false
+
+# 是否把图片、音频、视频和文件转为 Base64 消息段。
+# 跨机器协议端才可能需要；会增加内存、带宽和 WebSocket 压力。
 parser_use_base64: false
 
-# 普通媒体流最大下载大小，单位 MB。
+# 单个普通媒体流最大下载大小，单位 MB。
 parser_max_size: 90
 
 # 最大媒体时长，单位秒。
 parser_duration_maximum: 480
 
-# 是否在解析卡片中附加来源 URL。
+# 解析结果是否附加原始 URL。
 parser_append_url: false
 
-# 全局禁用的平台。
+# 解析结果是否附加平台提供的嵌入 / 播放链接。
+parser_embed_url: false
+
+# 信息卡是否附加原始 URL 二维码。
+parser_append_qrcode: false
+
+# 全局禁用的平台标识。可用标识见 README 平台表。
+# x / rednote / 5eplay 会分别映射为 twitter / xiaohongshu / fiveeplay。
 parser_disabled_platforms: []
 
-# B站视频编码顺序：avc、av01、hev。
+# 用户黑名单；填写适配器事件中的 user_id 字符串。
+parser_blacklist_users: []
+
+# true：群黑名单模式，默认所有群开启、名单内关闭。
+# false：群白名单模式，默认所有群关闭、名单内开启。
+parser_group_blacklist_enabled: true
+
+# B站视频编码优先级：avc、av01、hev、unknown。
 parser_bili_video_codes:
   - avc
   - av01
@@ -37,21 +68,70 @@ parser_bili_video_codes:
 # B站清晰度：16/32/64/80/112/116/120。
 parser_bili_video_quality: 80
 
-# default、common、htmlrender、htmlkit。
+# B站下载 CDN 地区；内置基础值为 zh、en、ja。
+parser_bili_cdn_region: zh
+
+# 自定义 B站 bilivideo.com CDN 域名，不含协议、端口或路径；null 使用地区配置。
+parser_bili_cdn_domain: null
+
+# 渲染方式：default、common、htmlrender、htmlkit。
+# default 为纯文本；浏览器不可用时其他模式自动降级。
 parser_render_type: common
 
-# 自定义字体文件名；文件放在本目录中。
+# 自定义字体文件名，字体文件放在 config/ 目录；null 使用内置字体。
 parser_custom_font: null
 
 # 用户名与标题字体粗细。
 parser_custom_font_weight: 700
 
-# 图片和图文是否使用合并转发。
-parser_need_forward_contents: true
-
-# Emoji 图片 CDN 与样式。
+# Emoji 图片 CDN 与样式。样式可选 apple、google、twitter、facebook。
 parser_emoji_cdn: https://emojicdn.elk.sh
 parser_emoji_style: facebook
 
-# true 为群黑名单模式，默认所有群开启；false 为群白名单模式。
-parser_group_blacklist_enabled: true
+# 白天主题时间范围 [开始, 结束]；范围外使用深色主题，支持跨午夜。
+parser_day_range:
+  - "6:00"
+  - "19:00"
+
+# 图片和图文是否使用合并转发；媒体项目很多时发送器也可能自动合并。
+parser_need_forward_contents: true
+
+# 纯文本长度阈值；超过后强制使用合并转发，最大有效值为 4500。
+parser_forward_text_threshold: 1000
+
+# 最大渲染评论数，最大有效值为 20。
+parser_max_comments: 5
+
+# 最大下载重试次数。
+parser_max_retries: 3
+
+# 是否转码合并 Live Photo；关闭后分别发送底图与动态部分。
+parser_live_photo: true
+
+# 是否开启懒下载。false（默认）为发链接后直接解析、下载并发送媒体。
+# true 时先发解析结果，用户再发送下面的命令下载媒体。
+parser_lazy_download: false
+
+# 懒下载模式下是否提示可用下载命令。
+parser_lazy_download_tip: false
+
+# 懒下载结果等待命令的超时时间，单位秒。
+parser_lazy_download_timeout: 30
+
+# 懒下载命令列表。
+parser_download_command:
+  - xz
+  - 下载
+
+# 海外平台 R18 安全门；默认开启。
+parser_r18_filter_enabled: true
+
+# 只有此列表内的平台才进行 R18 / NSFW 检查。
+# 国内平台默认完全绕过；别名 x 会自动归一化为 twitter。
+parser_r18_platforms:
+  - twitter
+  - youtube
+  - tiktok
+
+# X / Twitter 的 possibly_sensitive 标志是否直接拦截。
+parser_block_x_sensitive: true
