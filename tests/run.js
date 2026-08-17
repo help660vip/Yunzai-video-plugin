@@ -214,7 +214,10 @@ test("内置解析器注册并匹配原触发边界", async () => {
     matchUrl("https://x.com/example/status/123").parser.platform.name,
     "twitter",
   )
-  assert.equal(matchUrl("https://twitter.com/example/status/123"), null)
+  assert.equal(
+    matchUrl("https://twitter.com/example/status/123").parser.platform.name,
+    "twitter",
+  )
   assert.equal(matchUrl("https://www.xiaohongshu.com/explore/abc123"), null)
 })
 

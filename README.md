@@ -37,7 +37,7 @@
 | **快手** | ✓ | ✓ | ✓ | — | ✓ |
 | **微博** | ✓ | ✓ | ✓ | ✓ | ✓ |
 | **小红书 / RedNote** | ✓ | ✓ | ✓ | ✓ | ✓ |
-| **X / Twitter** | ✓ | — | ✓ | — | ✓ |
+| **X / Twitter** | ✓ | ✓ | ✓ | — | ✓ |
 | **AcFun** | ✓ | — | ✓ | — | ✓ |
 | **百度贴吧** | ✓ | ✓ | ✓ | — | ✓ |
 | **知乎** | ✓ | ✓ | ✓ | — | ✓ |
@@ -81,7 +81,7 @@
 | Yunzai | Miao-Yunzai 或 TRSS-Yunzai | 插件运行环境 |
 | Node.js | `>= 16.14` | JavaScript 运行环境 |
 | pnpm | 跟随 Yunzai 环境 | 安装依赖 |
-| Chrome / Chromium + Puppeteer | 推荐 | 渲染富文本信息卡 |
+| Chrome / Chromium + Puppeteer | 可选 | 仅用于 `common` / `htmlrender` 富文本信息卡 |
 | FFmpeg | 推荐，并加入 `PATH` | 音视频合并、转码、Live Photo |
 | yt-dlp | YouTube / TikTok / `ym` 需要 | 获取海外平台音视频 |
 
@@ -111,11 +111,21 @@ pnpm --dir ./plugins/yunzai-video-plugin install
 - 发链接即用：自动从普通文本、引用消息和 QQ JSON 分享卡片中提取链接，默认解析后立即下载并发送媒体。
 - 32 个平台：统一处理短链、图文、视频、音乐、评论与楼中楼、贴纸、Live Photo、引用、投票、AI 摘要和链接卡。
 - 有序富文本：文本、图片、视频、贴纸、链接与引用保持原有顺序，支持九宫格和长文本转发。
-- 稳定下载：流式大小限制、重试、缓存、音视频分别上传、FFmpeg 合并，以及下载失败时的兼容降级。
+- 稳定下载：动态媒体 URL 使用稳定缓存键并按文件特征识别真实格式；支持断点续传校验、音频格式自动修正、流式大小限制、重试、FFmpeg 合并和失败降级。
 - 丰富渲染：浅色 / 深色主题、统计、评论、投票、二维码和音乐卡；浏览器不可用时自动回退到纯文本。
 - 可选懒下载：开启后先发送解析结果，只有用户发送配置的下载命令时才下载媒体，可设置提示和超时。
 - 权限控制：群黑 / 白名单、用户黑名单、平台禁用列表，以及群管理员开启 / 关闭解析命令。
-- 兼容扩展：保留旧版公共 API 和配置语义，其他 Yunzai 插件可继续注册自己的解析器。
+- 轻量启动：平台注册保持固定以支持锅巴热更新，解析器实例只在首次命中时初始化；解析和下载不依赖 Python、NoneBot 或浏览器。
+- 兼容扩展：保留旧版公共 API 和配置语义，并提供统一 `DownloadFunc` 协议，其他 Yunzai 插件可继续注册自己的解析器。
+
+### v3.1.0 原生移植更新
+
+- 抖音：重构 Web 作品解析，新增直播、评论、Live Photo 循环、嵌入播放链接，并避免把作品原声重复当作独立音乐发送。
+- X / Twitter：新增评论与楼中楼、链接卡片、长文 / 文章、文章封面，以及引用和转发内容递归解析。
+- 快手新增评论与子回复；小黑盒新增 Live Photo；米游社完整迁入 3070 条官方表情资源映射。
+- 百度贴吧、Linux Do、米游社和壁吧专楼吧继续支持引用、链接卡和投票；BUFF 话题参数、酷我音乐解析及网易云音质重试已同步修正。
+- 下载器新增查询参数感知的稳定缓存、真实媒体格式识别、续传大小容差和音频格式转换；懒下载与平台凭据请求继续使用并发合并。
+- 渲染器不再预先创建封面路径，链接预览图按原比例展示；浏览器只作为可选的信息卡渲染器，不参与平台解析。
 
 <details>
 <summary><strong>渲染效果</strong></summary>
@@ -228,7 +238,7 @@ parser_download_command:
 
 ## 🧩 自定义解析器
 
-其他 Yunzai 插件可以从 [`lib/public.js`](lib/public.js) 导入公共模型、`Creator`、`BaseParser` 和注册器。旧版 `ParseResult`、`PathTask`、`contents`、`text`、`graphics` 调用方式继续有效；新解析器可使用有序 `content`、评论、统计、投票、贴纸和 Live Photo，并通过可选 `contentId` 提供稳定的内容去重标识。
+其他 Yunzai 插件可以从 [`lib/public.js`](lib/public.js) 导入公共模型、`Creator`、`DownloadFunc`、`BaseParser` 和注册器。旧版 `ParseResult`、`PathTask`、`contents`、`text`、`graphics` 调用方式继续有效；新解析器可使用有序 `content`、评论、统计、投票、贴纸和 Live Photo，并通过可选 `contentId` 提供稳定的内容去重标识。自定义下载函数可用 `DownloadFunc(factory, { url, extHeaders, cacheKey })` 暴露原始 URL、请求头和稳定缓存键。
 
 ```js
 import { BaseParser, registerParser } from "../yunzai-video-plugin/lib/public.js"
