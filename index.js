@@ -123,14 +123,16 @@ export class ParserCommandPlugin extends Plugin {
       const bvid = matched[1]
       const pageIndex = Number(matched[2] || 1) - 1
       const parser = getParser(BilibiliParser)
-      const [, audioUrl] = await parser.extractDownloadUrls({ bvid, pageIndex })
-      if (!audioUrl) {
+      const { audioUrls } = await parser.extractDownloadStreams({ bvid, pageIndex })
+      if (!audioUrls?.length) {
         await this.reply("未找到可下载的音频")
         return
       }
-      const audioPath = await downloader.downloadAudio(audioUrl, {
+      const audioPath = await downloader.downloadAudio(audioUrls[0], {
         fileName: `${bvid}-${pageIndex}.mp3`,
         headers: parser.headers,
+        fallbackUrls: audioUrls.slice(1),
+        retryHttpStatuses: BilibiliParser.BILI_RETRYABLE_HTTP_STATUSES,
       })
       await this.reply(await recordSegment(audioPath))
       if (config.parser_need_upload_audio) await sendFile(this.e, audioPath)

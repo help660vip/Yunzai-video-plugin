@@ -67,24 +67,30 @@ async function parseCase(item) {
     const parser = getParser(BilibiliParser)
     const pageIndex = Number(matched[2] || 1) - 1
     const streams = await withTimeout(
-      parser.extractDownloadUrls({ bvid: matched[1], pageIndex }),
+      parser.extractDownloadStreams({ bvid: matched[1], pageIndex }),
       45000,
       item.label,
     )
     if (!item.download && !forceDownload) {
-      return { status: "PARSED", media: streams.filter(Boolean).length }
+      return {
+        status: "PARSED",
+        media: Number(Boolean(streams.videoUrls?.length)) + Number(Boolean(streams.audioUrls?.length)),
+      }
     }
+    if (!streams.audioUrls?.length) return { status: "ERROR", error: "audio stream unavailable" }
     const file = await withTimeout(
-      parser.downloader.downloadAudio(streams[1], {
+      parser.downloader.downloadAudio(streams.audioUrls[0], {
         fileName: "smoke-" + matched[1] + "-" + pageIndex + ".mp3",
         headers: parser.headers,
+        fallbackUrls: streams.audioUrls.slice(1),
+        retryHttpStatuses: BilibiliParser.BILI_RETRYABLE_HTTP_STATUSES,
       }),
       180000,
       item.label + " download",
     )
     return {
       status: "DOWNLOADED",
-      media: streams.filter(Boolean).length,
+      media: Number(Boolean(streams.videoUrls?.length)) + Number(Boolean(streams.audioUrls?.length)),
       file,
       bytes: fs.statSync(file).size,
     }
