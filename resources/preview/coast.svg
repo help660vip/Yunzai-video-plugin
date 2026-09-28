@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720">
+  <title>山海</title>
+  <rect width="1200" height="720" fill="#edf2f0"/>
+  <circle cx="945" cy="160" r="67" fill="#dfb66c"/>
+  <path d="M0 360 230 104 502 400 620 265 802 449 1200 410V720H0Z" fill="#859a92"/>
+  <path d="m230 104-89 100 56-9 33 32 35-18 55 26Z" fill="#f6f7f3"/>
+  <path d="M0 454 309 315 635 463 852 390 1200 506V720H0Z" fill="#385f63"/>
+  <path d="M0 554c258-85 411 62 627 8s366-60 573 14v144H0Z" fill="#7fa6ad"/>
+  <path d="M0 632c207-73 372 48 621 5s383-34 579 18v65H0Z" fill="#afcbd0"/>
+  <path d="M787 526h150m-462 89h114m352 54h95" fill="none" stroke="#edf2f0" stroke-width="5" stroke-linecap="round"/>
+  <path d="m826 288 27-11 27 11m31-33 24-9 24 9" fill="none" stroke="#385f63" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

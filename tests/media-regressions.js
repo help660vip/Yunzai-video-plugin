@@ -50,7 +50,7 @@ test("下载器强制 identity 并在可重试状态码后轮换备用 URL", asy
   const downloader = new StreamDownloader()
   const originalRequest = downloader.http.request
   const previousRetries = config.parser_max_retries
-  const key = "upstream-head-fallback-" + Date.now()
+  const key = "media-fallback-" + Date.now()
   const media = Buffer.concat([Buffer.from([0, 0, 0, 24]), Buffer.from("ftypisom")])
   const calls = []
   let output = null
@@ -100,7 +100,7 @@ test("未列入重试集合的 HTTP 状态不会重试", async () => {
     }
     await assert.rejects(
       downloader.download("https://primary.invalid/unauthorized", {
-        cacheKey: "upstream-head-401-" + Date.now(),
+        cacheKey: "media-401-" + Date.now(),
         suffix: ".dat",
         fallbackUrls: ["https://fallback.invalid/unauthorized"],
         retryHttpStatuses: [403],
@@ -119,7 +119,7 @@ test("遗留断点收到 416 后删除分片并从备用线路完整重下", asy
   const originalRequest = downloader.http.request
   const originalDownloadOnce = downloader.downloadOnce.bind(downloader)
   const previousRetries = config.parser_max_retries
-  const key = "upstream-head-416-" + Date.now()
+  const key = "media-416-" + Date.now()
   let calls = 0
   let output = null
   try {
@@ -158,8 +158,8 @@ test("遗留断点收到 416 后删除分片并从备用线路完整重下", asy
 test("压缩响应忽略传输 Content-Length，且断点响应严格校验 Content-Range", async () => {
   const downloader = new StreamDownloader()
   const originalRequest = downloader.http.request
-  const compressedPath = path.join(cacheDir, "upstream-head-compressed.tmp")
-  const resumePath = path.join(cacheDir, "upstream-head-range.tmp")
+  const compressedPath = path.join(cacheDir, "media-compressed.tmp")
+  const resumePath = path.join(cacheDir, "media-range.tmp")
   try {
     downloader.http.request = async () => new Response("decoded", {
       status: 200,
@@ -265,7 +265,7 @@ test("米游社 UGC 支持片段查询参数、统计、媒体、表情和楼中
   } } }, "28498621183", "cn_gf01")
   assert.equal(result.contentId, "28498621183")
   assert.equal(result.title, "心跳通讯录 - 角色扮演")
-  assert.equal(result.stats.extra.hot, "9999")
+  assert.deepEqual(result.stats.extra.hot, ["热度", "9999"])
   assert.equal(result.videoContents.length, 1)
   assert.ok(result.comments[0].content.some(item => item instanceof StickerContent))
   assert.equal(result.comments[0].replies[0].parentAuthor.name, "评论者")
@@ -297,7 +297,7 @@ test("贴吧使用官方表情 CDN、链接卡和视频内容，评论保持接�
   assert.deepEqual(comments.map(comment => comment.author.name), ["普通用户", "楼主"])
 })
 
-test("抖音普通视频优先使用原比例封面，米游社表情表同步到上游 HEAD", () => {
+test("抖音视频使用原比例封面，米游社表情资源映射完整", () => {
   const result = new DouyinParser().buildWorkResult({
     aweme_id: "cover-1", share_info: { share_desc: "", share_desc_info: "测试" },
     author: {}, statistics: {}, video: {
@@ -324,5 +324,5 @@ for (const item of tests) {
   }
 }
 
-console.log(`\n${tests.length - failures}/${tests.length} upstream HEAD tests passed`)
+console.log(`\n${tests.length - failures}/${tests.length} media regression tests passed`)
 if (failures) process.exitCode = 1

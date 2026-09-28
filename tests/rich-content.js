@@ -580,5 +580,5 @@ for (const item of tests) {
     console.error(error)
   }
 }
-console.log(`\n${passed}/${tests.length} upstream 1.3.4 tests passed`)
+console.log(`\n${passed}/${tests.length} rich content tests passed`)
 if (passed !== tests.length) process.exitCode = 1

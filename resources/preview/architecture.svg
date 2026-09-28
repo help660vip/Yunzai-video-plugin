@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="720" viewBox="0 0 1000 720">
+  <title>海边建筑</title>
+  <rect width="1000" height="720" fill="#f1eee7"/>
+  <rect y="504" width="1000" height="216" fill="#b9d0cd"/>
+  <circle cx="199" cy="173" r="64" fill="#dbab68"/>
+  <path d="M59 606 413 380 945 541 584 720H59Z" fill="#879ea0"/>
+  <path d="m389 191 281 99v295L389 479Z" fill="#d3c1a9"/>
+  <path d="m670 290 160-97v288l-160 104Z" fill="#ab997f"/>
+  <path d="m389 191 167-93 274 95-160 97Z" fill="#faf8f0"/>
+  <path d="m421 252 210 76v38l-210-78Zm0 69 210 76v38l-210-78Zm0 69 210 76v38l-210-78Z" fill="#5b777a"/>
+  <path d="m702 322 94-57v38l-94 57Zm0 70 94-57v38l-94 57Z" fill="#3e595c"/>
+  <path d="m298 478 30-18 24 9-31 20Z" fill="#f6f2e8"/>
+  <path d="M320 480v111" stroke="#586c65" stroke-width="9"/>
+  <path d="M277 451c-19-71 0-111 44-139 45 40 62 83 41 138-33 29-62 28-85 1Z" fill="#647f71"/>
+  <path d="m75 581 93-58m663 100 102-64" fill="none" stroke="#edf3ed" stroke-width="5" stroke-linecap="round"/>
+</svg>

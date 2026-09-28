@@ -2,7 +2,7 @@
 
 # Yunzai Video Plugin
 
-### ✨ 面向 Miao-Yunzai / TRSS-Yunzai 的链接分享自动解析插件 ✨
+面向 Miao-Yunzai / TRSS-Yunzai 的链接与媒体解析插件
 
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D16.14-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![JavaScript](https://img.shields.io/badge/JavaScript-ESM-F7DF1E?logo=javascript&logoColor=black)](https://developer.mozilla.org/docs/Web/JavaScript)
@@ -14,9 +14,9 @@
 
 [项目主页](https://github.com/help660vip/Yunzai-video-plugin)
 · [问题反馈](https://github.com/help660vip/Yunzai-video-plugin/issues)
-· [安装](#-安装)
-· [配置](#️-配置)
-· [开发](#-开发)
+· [安装](#安装)
+· [配置](#配置)
+· [开发](#开发)
 
 </div>
 
@@ -26,63 +26,64 @@
 >
 > 因使用不当造成的一切责任由使用者承担，本项目维护者不承担相关责任。本项目与下列平台不存在隶属、授权或合作关系。
 
-这是一个纯 JavaScript 的 Yunzai 插件，不需要 Python 或 NoneBot。安装后直接向机器人发送受支持的链接或 QQ 分享卡片，插件会解析信息并下载、发送其中的媒体；“懒下载”是可选模式，默认关闭。
+基于 Node.js 的独立 Yunzai 插件。直接向机器人发送受支持的链接或 QQ 分享卡片，即可解析并下载、发送其中的媒体；懒下载是可选模式，默认关闭。
 
-## 📉 支持的平台
+## 支持的平台
 
 | 平台 | 图文 | 评论 | 视频 | Live Photo | 音频 / 音乐 |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **B站** | ✓ | ✓ | ✓ | ✓ | ✓ |
+| **B站** | ✓ | ✓ | ✓ | — | ✓ |
 | **抖音** | ✓ | ✓ | ✓ | ✓ | ✓ |
-| **快手** | ✓ | ✓ | ✓ | — | ✓ |
-| **微博** | ✓ | ✓ | ✓ | ✓ | ✓ |
-| **小红书 / RedNote** | ✓ | ✓ | ✓ | ✓ | ✓ |
-| **X / Twitter** | ✓ | ✓ | ✓ | — | ✓ |
-| **AcFun** | ✓ | — | ✓ | — | ✓ |
-| **百度贴吧** | ✓ | ✓ | ✓ | — | ✓ |
-| **知乎** | ✓ | ✓ | ✓ | — | ✓ |
+| **快手** | ✓ | ✓ | ✓ | — | — |
+| **微博** | ✓ | ✓ | ✓ | ✓ | — |
+| **小红书 / RedNote** | ✓ | ✓ | ✓ | ✓ | — |
+| **X / Twitter** | ✓ | ✓ | ✓ | — | — |
+| **AcFun** | ✓ | — | ✓ | — | — |
+| **百度贴吧** | ✓ | ✓ | ✓ | — | — |
+| **知乎** | ✓ | ✓ | ✓ | — | — |
 | **堆糖** | ✓ | ✓ | — | — | — |
-| **小黑盒** | ✓ | ✓ | ✓ | ✓ | ✓ |
+| **小黑盒** | ✓ | ✓ | ✓ | ✓ | — |
 | **LOFTER** | ✓ | ✓ | — | — | ✓ |
-| **网易 BUFF** | ✓ | ✓ | — | — | — |
+| **网易 BUFF** | ✓ | ✓ | ✓ | — | — |
 | **酷安** | ✓ | ✓ | — | — | — |
 | **虎扑** | ✓ | ✓ | ✓ | — | ✓ |
-| **米游社** | ✓ | ✓ | ✓ | — | ✓ |
-| **豆瓣** | ✓ | ✓ | — | — | — |
-| **5EPlay** | ✓ | ✓ | ✓ | — | ✓ |
-| **豆包** | — | — | ✓ | — | ✓ |
+| **米游社** | ✓ | ✓ | ✓ | — | — |
+| **豆瓣** | ✓ | ✓ | ✓ | — | — |
+| **5EPlay** | ✓ | ✓ | ✓ | — | — |
+| **豆包** | — | — | ✓ | — | — |
 | **ILLU** | ✓ | ✓ | — | — | — |
 | **Linux Do** | ✓ | ✓ | — | — | — |
 | **完美世界电竞** | ✓ | ✓ | ✓ | — | ✓ |
 | **壁吧专楼吧** | ✓ | ✓ | — | — | — |
-| **TapTap** | ✓ | ✓ | ✓ | — | ✓ |
+| **TapTap** | ✓ | ✓ | ✓ | — | — |
 | **网易大神** | ✓ | ✓ | ✓ | — | ✓ |
-| **NGA** | ✓ | ✓ | ✓ | — | ✓ |
+| **NGA** | ✓ | — | — | — | — |
 | **YouTube** | ✓ | — | ✓ | — | ✓ |
-| **TikTok** | ✓ | — | ✓ | — | ✓ |
-| **网易云音乐** | ✓ | — | ✓ | — | ✓ |
-| **酷狗音乐** | ✓ | — | ✓ | — | ✓ |
-| **汽水音乐** | ✓ | — | ✓ | — | ✓ |
-| **酷我音乐** | ✓ | — | ✓ | — | ✓ |
+| **TikTok** | ✓ | — | ✓ | — | — |
+| **网易云音乐** | ✓ | — | — | — | ✓ |
+| **酷狗音乐** | ✓ | — | — | — | ✓ |
+| **汽水音乐** | ✓ | — | — | — | ✓ |
+| **酷我音乐** | ✓ | — | — | — | ✓ |
 
 > **标识说明**
 >
 > - ✓：支持解析该类内容；具体可见内容仍受原平台权限、风控、Cookie 和分享页面限制。
 > - —：该平台通常没有此内容形态，或插件未请求该模块。
 > - “图文”包括动态、帖子、问答、文章、相册、链接卡、引用、投票和其他有序富文本。
+> - “音频 / 音乐”指独立音频内容或专用音频命令，不表示所有视频都支持单独提取音轨。
 > - `twitter` / `xiaohongshu` 是稳定的平台标识；配置中也接受 `x` / `rednote`，`5eplay` 会映射为 `fiveeplay`。
 
-## 📦 安装
+## 安装
 
 ### 环境要求
 
 | 项目 | 要求 | 用途 |
 | :--- | :--- | :--- |
 | Yunzai | Miao-Yunzai 或 TRSS-Yunzai | 插件运行环境 |
-| Node.js | `>= 16.14` | JavaScript 运行环境 |
+| Node.js | `>= 16.14`，推荐 `22+` | JavaScript 运行环境 |
 | pnpm | 跟随 Yunzai 环境 | 安装依赖 |
 | Chrome / Chromium + Puppeteer | 可选 | 仅用于 `common` / `htmlrender` 富文本信息卡 |
-| FFmpeg | 推荐，并加入 `PATH` | 音视频合并、转码、Live Photo |
+| FFmpeg | 推荐，并加入 `PATH` | 音视频合并、转码、HLS 转封装、Live Photo |
 | yt-dlp | YouTube / TikTok / `ym` 需要 | 获取海外平台音视频 |
 
 在 Yunzai 根目录执行：
@@ -99,6 +100,8 @@ ffmpeg -version
 yt-dlp --version
 ```
 
+使用新版 yt-dlp 解析 YouTube 时，需要其支持的 JavaScript 运行时。插件会在 Node.js `22+` 且 yt-dlp 支持时自动启用当前 Node；较旧 Node 环境可按 [yt-dlp 运行时说明](https://github.com/yt-dlp/yt-dlp/wiki/EJS) 安装其默认启用的 Deno。插件不会自动下载远程求解组件，也不会绕过登录或年龄限制。
+
 更新插件：
 
 ```bash
@@ -106,42 +109,24 @@ git -C ./plugins/yunzai-video-plugin pull
 pnpm --dir ./plugins/yunzai-video-plugin install
 ```
 
-## 🎁 特性
+## 特性
 
 - 发链接即用：自动从普通文本、引用消息和 QQ JSON 分享卡片中提取链接，默认解析后立即下载并发送媒体。
 - 32 个平台：统一处理短链、图文、视频、音乐、评论与楼中楼、贴纸、Live Photo、引用、投票、AI 摘要和链接卡。
 - 有序富文本：文本、图片、视频、贴纸、链接与引用保持原有顺序，支持九宫格和长文本转发。
-- 稳定下载：动态媒体 URL 使用稳定缓存键并按文件特征识别真实格式；支持 identity 编码、严格断点续传、多 CDN 轮换、音频格式自动修正、流式大小限制、重试、FFmpeg 合并和失败降级。
-- 丰富渲染：浅色 / 深色主题、统计、评论、投票、二维码和音乐卡；浏览器不可用时自动回退到纯文本。
+- 稳定下载：动态媒体 URL 使用稳定缓存键并按文件特征识别真实格式；支持 identity 编码、严格断点续传、多 CDN 轮换、音频格式自动修正、流式大小限制、重试、FFmpeg 合并、HLS 转封装和失败降级。
+- 丰富渲染：本地自定义主题、浅色 / 深色模式、统计、评论、投票、二维码和音乐卡；浏览器不可用时自动回退到纯文本。
 - 可选懒下载：开启后先发送解析结果，只有用户发送配置的下载命令时才下载媒体，可设置提示和超时。
 - 权限控制：群黑 / 白名单、用户黑名单、平台禁用列表，以及群管理员开启 / 关闭解析命令。
-- 轻量启动：平台注册保持固定以支持锅巴热更新，解析器实例只在首次命中时初始化；解析和下载不依赖 Python、NoneBot 或浏览器。
+- 轻量启动：平台注册保持固定以支持锅巴热更新，解析器实例只在首次命中时初始化；平台解析不依赖浏览器。
 - 兼容扩展：保留旧版公共 API 和配置语义，并提供统一 `DownloadFunc` 协议，其他 Yunzai 插件可继续注册自己的解析器。
 
-### v3.2.0 原生移植更新
-
-本版按 `nonebot-plugin-parser-lite` 当前 HEAD `22f6360` 完整同步，包含 `1.3.5` 标签之后的修复，不需要 Python 或 NoneBot：
-
-- X / Twitter：完整解析 Article 的 Draft.js 有序正文、内嵌图片和视频；UTF-16 实体偏移在 emoji 前后仍保持正确，文章封面使用纵向富内容展示。
-- 米游社：新增 UGC 社区关卡链接解析，支持开发者、图文、视频、热度 / 好评率、评论和楼中楼；官方表情资源映射由 3070 项更新为 3154 项。
-- B站：保留替换后的地区 / 自定义 CDN 与平台返回的全部非 PCDN 原始地址；403、404、408、425、429 和 5xx 会自动轮换线路重试，普通视频和 `bm` 音频命令均生效。
-- 下载器：文件请求强制 `Accept-Encoding: identity`，严格验证 206 / 416 与完整 `Content-Range`，压缩响应不再错误比较传输长度；失败续传会按是否可恢复决定保留或回收临时文件。
-- 渲染与 FFmpeg：子进程支持二进制 stdin / stdout，卡片截图优先转为 JPEG 减少体积；FFmpeg 不可用时安全保留 PNG，不影响发送。
-- 贴吧表情切换为百度官方 CDN，链接卡、帖子视频和评论原始顺序同步上游；抖音视频优先使用原比例封面。
-
-### v3.1.0 原生移植更新
-
-- 抖音：重构 Web 作品解析，新增直播、评论、Live Photo 循环、嵌入播放链接，并避免把作品原声重复当作独立音乐发送。
-- X / Twitter：新增评论与楼中楼、链接卡片、长文 / 文章、文章封面，以及引用和转发内容递归解析。
-- 快手新增评论与子回复；小黑盒新增 Live Photo；米游社完整迁入 3070 条官方表情资源映射。
-- 百度贴吧、Linux Do、米游社和壁吧专楼吧继续支持引用、链接卡和投票；BUFF 话题参数、酷我音乐解析及网易云音质重试已同步修正。
-- 下载器新增查询参数感知的稳定缓存、真实媒体格式识别、续传大小容差和音频格式转换；懒下载与平台凭据请求继续使用并发合并。
-- 渲染器不再预先创建封面路径，链接预览图按原比例展示；浏览器只作为可选的信息卡渲染器，不参与平台解析。
+主题安装和模板格式见 [主题开发文档](docs/THEMES.md)。`parser_max_comments: 0` 可关闭评论请求；`parser_summary_in_forward` 与 `parser_video_in_forward` 分别控制总结卡和视频是否加入合并转发。上传遇到适配器限制时，插件会尝试单独发送媒体。
 
 <details>
 <summary><strong>渲染效果</strong></summary>
 
-固定测试夹具生成的实际渲染截图：
+信息卡示例：
 
 | 浅色主题 | 深色主题 |
 | :---: | :---: |
@@ -151,7 +136,7 @@ pnpm --dir ./plugins/yunzai-video-plugin install
 
 </details>
 
-## 🔞 海外平台 R18 拦截
+## 海外平台 R18 拦截
 
 R18 拦截默认开启，但**只检查配置列表内的海外平台**：`twitter`、`youtube`、`tiktok`。国内平台默认完全绕过 R18 和关键词判断，不会因为正文包含同类词语而被插件拦截。
 
@@ -167,7 +152,7 @@ R18 拦截默认开启，但**只检查配置列表内的海外平台**：`twitt
 
 要增减受检查的海外平台，请修改 `parser_r18_platforms`；不要把国内平台加入列表，除非你明确需要改变上述默认边界。
 
-## ⚙️ 配置
+## 配置
 
 配置文件位于 [`config/config.yaml`](config/config.yaml)。手动编辑文件后需重启 Yunzai；通过锅巴网页保存则会立即热更新，无需重启。下方仅概览常用分组；完整字段、默认值和注释请展开或直接查看配置文件。
 
@@ -184,15 +169,15 @@ R18 拦截默认开启，但**只检查配置列表内的海外平台**：`twitt
 
 | 分组 | 配置项 | 说明 |
 | :--- | :--- | :--- |
-| 凭据 | `parser_bili_ck`、`parser_ytb_ck`、`parser_xhs_ck`、`parser_zhihu_ck`、`parser_linuxdo_ck` | 对应平台 Cookie，可留空 |
+| 凭据 | `parser_bili_ck`、`parser_bili_access_key`、`parser_x_ck`、`parser_ytb_ck`、`parser_xhs_ck`、`parser_zhihu_ck`、`parser_linuxdo_ck` | 对应平台 Cookie 或 B站 Access Key，可留空 |
 | 网络 | `parser_proxy`、`parser_max_retries`、`parser_max_size`、`parser_duration_maximum` | 代理、重试及下载限制 |
-| 发送 | `parser_need_upload*`、`parser_use_base64`、`parser_need_forward_contents` | 上传与消息发送方式 |
-| 展示 | `parser_render_type`、`parser_day_range`、字体、Emoji、URL、二维码 | 信息卡和附加内容 |
+| 发送 | `parser_need_upload*`、`parser_use_base64`、`parser_need_forward_contents`、`parser_summary_in_forward`、`parser_video_in_forward` | 上传与消息发送方式 |
+| 展示 | `parser_render_type`、`parser_render_theme`、`parser_theme_dirs`、`parser_day_range`、字体、二维码 | 信息卡和附加内容 |
 | 下载 | `parser_lazy_download*`、`parser_download_command`、`parser_live_photo` | 懒下载及 Live Photo |
 | 过滤 | `parser_disabled_platforms`、`parser_blacklist_users`、群名单、R18 配置 | 解析范围和安全门 |
 | 缓存 | `parser_cache_retention_hours`、`parser_cache_max_mb` | 默认保留 24 小时，最大 1 GiB |
 | 去重 | `parser_dedup_enabled`、`parser_dedup_window_seconds` | 同机器人、同群默认 30 秒静默去重 |
-| 平台 | B站画质 / 编码 / CDN 等 | 平台专用选项 |
+| 平台 | B站画质 / 音质 / 编码 / CDN 等 | 平台专用选项 |
 
 默认是“直接解析并下载”：
 
@@ -219,14 +204,14 @@ parser_download_command:
 
 > [!WARNING]
 >
-> Cookie 具有账号权限，配置文件以明文存储。请勿截图分享、提交到 GitHub 或发送给不可信第三方；反馈问题前务必脱敏。
+> Cookie、Access Key 和 Refresh Token 具有账号权限，配置与登录数据以明文存储。请勿截图分享、提交到 GitHub 或发送给不可信第三方；反馈问题前务必脱敏。
 
-- `blogin` 获取的 B站凭据保存在 `data/bilibili_cookies.json`。
+- `blogin` 获取的 B站 Cookie 保存在 `data/bilibili_cookies.json`，App 登录凭据（Access Key / Refresh Token）保存在 `data/bilibili_access.json`。
 - YouTube Cookie 会转换到 `config/ytb_cookies.txt` 供 `yt-dlp` 使用。
 - 群开关、媒体缓存和渲染缓存位于 `data/`。插件启动、每天 `01:00` 及解析期间都会检查缓存；默认删除超过 24 小时的文件，并在超过 1 GiB 时优先清理最旧文件。
 - `data/` 被 Git 忽略，但 `config/config.yaml` 会被版本控制追踪，不要写入准备公开的真实凭据。
 
-## 🎉 使用
+## 使用
 
 默认无需命令：直接发送链接或分享卡片，插件会发送信息卡并下载媒体。
 
@@ -247,7 +232,7 @@ parser_download_command:
 - 同一机器人账号在同一群内，30 秒内解析到相同平台内容 ID 时只发送一次；短链和原始链接也会归并。不同群和不同私聊用户互不影响。
 - 本插件只能阻止自身重复响应，无法控制其他独立机器人是否同时回复原消息；请把已知机器人账号加入用户黑名单。
 
-## 🧩 自定义解析器
+## 自定义解析器
 
 其他 Yunzai 插件可以从 [`lib/public.js`](lib/public.js) 导入公共模型、`Creator`、`DownloadFunc`、`BaseParser` 和注册器。旧版 `ParseResult`、`PathTask`、`contents`、`text`、`graphics` 调用方式继续有效；新解析器可使用有序 `content`、评论、统计、投票、贴纸和 Live Photo，并通过可选 `contentId` 提供稳定的内容去重标识。自定义下载函数可用 `DownloadFunc(factory, { url, extHeaders, cacheKey })` 暴露原始 URL、请求头和稳定缓存键。
 
@@ -275,7 +260,7 @@ class ExampleParser extends BaseParser {
 registerParser(ExampleParser)
 ```
 
-## 🛠 开发
+## 开发
 
 ```bash
 pnpm install
@@ -295,21 +280,11 @@ git diff --check
 ├─ lib/render/       # 纯文本与 Puppeteer 信息卡渲染
 ├─ resources/        # 字体、图标和兜底资源
 ├─ scripts/          # 开发检查脚本
-└─ tests/            # 固定夹具与自动化测试
+└─ tests/            # 自动化回归
 ```
 
 提交问题时，请提供 Yunzai / Node.js / FFmpeg / `yt-dlp` 版本、链接类型和已脱敏的完整日志。请勿公开 Cookie、Token、QQ 号或其他敏感信息。
 
-## 🎊 致谢
+## 许可证
 
-- [sokoko-org/nonebot-plugin-parser-lite](https://github.com/sokoko-org/nonebot-plugin-parser-lite)：本次多平台能力、有序富文本模型与文档结构的重要上游参考。
-- [fllesser/nonebot-plugin-parser](https://github.com/fllesser/nonebot-plugin-parser)：社交媒体分享链接解析项目。
-- [LoCCai/nonebot-plugin-parser-m](https://github.com/LoCCai/nonebot-plugin-parser-m)：多平台解析实现参考。
-- [lumina37/aiotieba](https://github.com/lumina37/aiotieba)：贴吧协议与接口参考。
-- [ikenxuan/karin-plugin-kkk](https://github.com/ikenxuan/karin-plugin-kkk)：Yunzai 平台解析与信息卡设计参考。
-- [ikenxuan/amagi](https://github.com/ikenxuan/amagi)：B站、抖音 Web 数据接口参考。
-- [zly2006/zhihu-plus-plus](https://github.com/zly2006/zhihu-plus-plus)：知乎接口参考。
-- [Uesugi Hanako](https://github.com/negichan) 及相关贡献者：渲染与签名算法参考。
-- `molanp`、`Les Freire` 及所有上游贡献者。
-
-本项目以 [MIT License](LICENSE) 发布。欢迎提交 Issue、Pull Request，或在 [GitHub](https://github.com/help660vip/Yunzai-video-plugin) 点一个 Star。
+本项目以 [MIT License](LICENSE) 发布。第三方组件与保留的版权通知见 [NOTICE](NOTICE.md)。欢迎通过 Issue 和 Pull Request 提交反馈与改进。
