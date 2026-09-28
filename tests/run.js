@@ -7,6 +7,7 @@ import { Response } from "node-fetch"
 import { LimitedMap } from "../lib/core/cache.js"
 import { config } from "../lib/core/config.js"
 import { StreamDownloader } from "../lib/core/downloader.js"
+import { ffmpeg } from "../lib/core/ffmpeg.js"
 import { handleParserEvent } from "../lib/core/engine.js"
 import { IgnoreError } from "../lib/core/errors.js"
 import { groupKey, groupSet, isEnabled } from "../lib/core/group-filter.js"
@@ -187,20 +188,24 @@ test("普通下载严格检查 Content-Length 并写入缓存", async () => {
   }
 })
 
-test("M3U8 分片按清单顺序拼接且不走普通大小限制", async () => {
+test("M3U8 下载经受大小限制的 FFmpeg 转封装", async () => {
   const downloader = new StreamDownloader()
   const target = path.join(cacheDir, "fixture-m3u8.mp4")
   fs.rmSync(target, { force: true })
-  let index = 0
-  downloader.m3u8Slices = async () => ["https://media.invalid/1", "https://media.invalid/2"]
-  downloader.http.request = async () =>
-    new Response(index++ === 0 ? "first" : "second", { status: 200 })
+  const original = ffmpeg.downloadHlsToMp4
+  ffmpeg.downloadHlsToMp4 = async (url, output, options) => {
+    assert.equal(options.maxSizeMb, config.parser_max_size)
+    assert.equal(url, "https://media.invalid/list.m3u8")
+    fs.writeFileSync(output, "remuxed-mp4")
+    return output
+  }
   try {
     await downloader.downloadM3u8("https://media.invalid/list.m3u8", {
       fileName: path.basename(target),
     })
-    assert.equal(fs.readFileSync(target, "utf8"), "firstsecond")
+    assert.equal(fs.readFileSync(target, "utf8"), "remuxed-mp4")
   } finally {
+    ffmpeg.downloadHlsToMp4 = original
     fs.rmSync(target, { force: true })
   }
 })
@@ -219,6 +224,8 @@ test("内置解析器注册并匹配原触发边界", async () => {
     "twitter",
   )
   assert.equal(matchUrl("https://www.xiaohongshu.com/explore/abc123"), null)
+  assert.equal(matchUrl("https://www.xiaohongshu.com/explore/1234567890abcdef12345678")?.ParserClass, XiaohongshuParser)
+  assert.equal(matchUrl("https://www.xiaohongshu.com/discovery/item/1234567890abcdef12345678")?.ParserClass, XiaohongshuParser)
 })
 
 test("全部 32 个平台均注册并路由真实分享 URL", async () => {
@@ -391,16 +398,19 @@ test("AcFun 清晰度取接口返回的首个受支持项", () => {
   assert.equal(selected.url, "first")
 })
 
-test("AcFun 页面夹具保留无来源 URL 和首个清晰度行为", async () => {
+test("AcFun 页面降级保留清晰度并补全来源和时长", async () => {
   const original = http.text
+  const originalJson = http.json
   http.text = async () => fixture("acfun.html")
+  http.json = async () => { throw new Error("synthetic mobile API unavailable") }
   try {
     const result = await new AcfunParser().parse({ groups: { acid: "123" } })
     assert.equal(result.title, "AcFun 测试")
-    assert.equal(result.url, null)
-    assert.equal(result.video.duration, null)
+    assert.equal(result.url, "https://www.acfun.cn/v/ac123")
+    assert.equal(result.video.duration, 12)
   } finally {
     http.text = original
+    http.json = originalJson
   }
 })
 
@@ -470,7 +480,7 @@ test("小红书 Explore 异常后无条件回退 Discovery", async () => {
     assert.equal(result.title, "小红书备用页")
     assert.equal(result.videoContents[0].duration, 2)
     assert.equal(result.timestamp, 1760000000)
-    assert.equal(result.url, null)
+    assert.equal(result.url, "https://www.xiaohongshu.com/explore/abc")
   } finally {
     http.request = originalRequest
     http.text = originalText
@@ -916,7 +926,7 @@ test("四个音乐平台用固定响应构造音乐卡与懒音频任务", async
     assert.equal(kugou.audioContents[0].pathTask.url, "https://audio.invalid/kugou.mp3")
 
     http.json = async (url, options) => {
-      assert.equal(url, "https://parse-api.sokoko.org/api/kuwo/songs/")
+      assert.equal(url, "https://parse-api.sokoko.org/api/kuwo/song/")
       assert.deepEqual(options.params, { music_id: "303", quality: "320k" })
       return {
         code: 200,
