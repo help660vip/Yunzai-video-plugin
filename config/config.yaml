@@ -1,8 +1,14 @@
-# Yunzai Video Plugin 3.0 配置
-# 修改后请重启 Yunzai。Cookie / Token 请勿提交到公开仓库。
+# Yunzai Video Plugin 配置
+# 手动修改后重启；锅巴网页保存后热生效。Cookie / Token 请勿提交到公开仓库。
 
 # B站 Cookie；可留空并使用 blogin 私聊扫码登录。
 parser_bili_ck: null
+
+# B站 App Access Key，可选；未配置时使用可用的公开接口。
+parser_bili_access_key: null
+
+# X Cookie，可选；仅用于 X 官方接口，不发送到第三方解析服务。
+parser_x_ck: null
 
 # YouTube 浏览器 Cookie 字符串，供 yt-dlp 使用。
 parser_ytb_ck: null
@@ -65,10 +71,13 @@ parser_bili_video_codes:
   - av01
   - hev
 
-# B站清晰度：16/32/64/80/112/116/120。
+# B站清晰度上限：5/6/16/32/64/74/80/100/112/116/120/127。
 parser_bili_video_quality: 80
 
-# B站下载 CDN 地区；内置基础值为 zh、en、ja。
+# B站音频音质上限：30216(64K)、30232(132K)、30280(192K)、30250(Dolby)、30251(Hi-Res)。
+parser_bili_audio_quality: 30280
+
+# B站下载 CDN 地区；内置线路为 zh、en、ja、proxy。
 parser_bili_cdn_region: zh
 
 # 自定义 B站 bilivideo.com CDN 域名，不含协议、端口或路径；null 使用地区配置。
@@ -77,6 +86,12 @@ parser_bili_cdn_domain: null
 # 渲染方式：default、common、htmlrender、htmlkit。
 # default 为纯文本；浏览器不可用时其他模式自动降级。
 parser_render_type: common
+
+# 本地主题 ID，主题放在 data/themes；不可用时回退到 default。
+parser_render_theme: default
+
+# 额外本地主题搜索目录，仅添加可信目录。
+parser_theme_dirs: []
 
 # 自定义字体文件名，字体文件放在 config/ 目录；null 使用内置字体。
 parser_custom_font: null
@@ -96,10 +111,14 @@ parser_day_range:
 # 图片和图文是否使用合并转发；媒体项目很多时发送器也可能自动合并。
 parser_need_forward_contents: true
 
+# 将总结卡 / 视频加入媒体合并转发。懒下载时总结卡仍即时单独发送。
+parser_summary_in_forward: false
+parser_video_in_forward: false
+
 # 纯文本长度阈值；超过后强制使用合并转发，最大有效值为 4500。
 parser_forward_text_threshold: 1000
 
-# 最大渲染评论数，最大有效值为 20。
+# 最大评论数，最大有效值为 20；0 表示不请求或展示评论。
 parser_max_comments: 5
 
 # 最大下载重试次数。

@@ -3,11 +3,12 @@ import path from "node:path"
 import QRCode from "qrcode"
 
 import { resultCache } from "./lib/core/cache.js"
-import { scheduleCacheCleanup } from "./lib/core/cache-lifecycle.js"
+import { cacheLifecycle, scheduleCacheCleanup } from "./lib/core/cache-lifecycle.js"
 import { config, onConfigChange } from "./lib/core/config.js"
 import { downloader } from "./lib/core/downloader.js"
 import { handleParserEvent } from "./lib/core/engine.js"
-import { setEnabled } from "./lib/core/group-filter.js"
+import { isEnabled, setEnabled } from "./lib/core/group-filter.js"
+import { shouldBlockResult, BLOCKED_CONTENT_MESSAGE } from "./lib/core/safety.js"
 import {
   claimLazyResult,
   clearLazyResults,
@@ -26,13 +27,14 @@ import {
 import { commandExists, sleep } from "./lib/core/utils.js"
 import { hasYtDlp, ytdlp } from "./lib/core/ytdlp.js"
 import { BilibiliParser } from "./lib/parsers/bilibili.js"
+import { YouTubeParser } from "./lib/parsers/youtube.js"
 import { biliApi } from "./lib/parsers/bilibili-api.js"
 import { registerBuiltinParsers } from "./lib/parsers/index.js"
 
 await registerBuiltinParsers()
 
 const Plugin = globalThis.plugin
-if (!Plugin) throw new Error("nonebot-plugin-parser 必须由 Miao-Yunzai / TRSS-Yunzai 加载")
+if (!Plugin) throw new Error("Yunzai Video Plugin 必须由 Miao-Yunzai / TRSS-Yunzai 加载")
 
 function commandRules() {
   const rules = [
@@ -113,6 +115,7 @@ export class ParserCommandPlugin extends Plugin {
   }
 
   async bilibiliMusic() {
+    if (!isEnabled(this.e) || config.parser_disabled_platforms.includes("bilibili")) return false
     await reaction(this.e, "resolving")
     try {
       const matched = /(BV[A-Za-z0-9]{10})(?:\s(\d{1,3}))?/.exec(this.e.msg || "")
@@ -123,19 +126,21 @@ export class ParserCommandPlugin extends Plugin {
       const bvid = matched[1]
       const pageIndex = Number(matched[2] || 1) - 1
       const parser = getParser(BilibiliParser)
-      const { audioUrls } = await parser.extractDownloadStreams({ bvid, pageIndex })
+      const { audioUrls, audioQuality } = await parser.extractDownloadStreams({ bvid, pageIndex })
       if (!audioUrls?.length) {
         await this.reply("未找到可下载的音频")
         return
       }
       const audioPath = await downloader.downloadAudio(audioUrls[0], {
-        fileName: `${bvid}-${pageIndex}.mp3`,
+        fileName: `${bvid}-${pageIndex}-${audioQuality || config.parser_bili_audio_quality}.mp3`,
         headers: parser.headers,
         fallbackUrls: audioUrls.slice(1),
         retryHttpStatuses: BilibiliParser.BILI_RETRYABLE_HTTP_STATUSES,
       })
-      await this.reply(await recordSegment(audioPath))
-      if (config.parser_need_upload_audio) await sendFile(this.e, audioPath)
+      await cacheLifecycle.withActive([audioPath], async () => {
+        await this.reply(await recordSegment(audioPath))
+        if (config.parser_need_upload_audio) await sendFile(this.e, audioPath)
+      })
       await reaction(this.e, "done")
     } catch (error) {
       await reaction(this.e, "fail")
@@ -144,6 +149,7 @@ export class ParserCommandPlugin extends Plugin {
   }
 
   async youtubeMusic() {
+    if (!isEnabled(this.e) || config.parser_disabled_platforms.includes("youtube")) return false
     await reaction(this.e, "resolving")
     try {
       const matched =
@@ -154,9 +160,19 @@ export class ParserCommandPlugin extends Plugin {
         await this.reply("请发送正确的油管链接")
         return
       }
-      const audioPath = await ytdlp.downloadAudio(`https://${matched[0]}`)
-      await this.reply(await recordSegment(audioPath))
-      if (config.parser_need_upload_audio) await sendFile(this.e, audioPath)
+      const url = `https://${matched[0]}`
+      const parser = getParser(YouTubeParser)
+      const result = await parser.parseVideo(url)
+      if (shouldBlockResult(result)) {
+        await this.reply(BLOCKED_CONTENT_MESSAGE)
+        await reaction(this.e, "done")
+        return
+      }
+      const audioPath = await ytdlp.downloadAudio(url, parser.cookieFile())
+      await cacheLifecycle.withActive([audioPath], async () => {
+        await this.reply(await recordSegment(audioPath))
+        if (config.parser_need_upload_audio) await sendFile(this.e, audioPath)
+      })
       await reaction(this.e, "done")
     } catch (error) {
       await reaction(this.e, "fail")
@@ -191,6 +207,7 @@ export class ParserCommandPlugin extends Plugin {
   }
 
   async lazyDownload() {
+    if (!isEnabled(this.e)) return false
     const command = String(this.e?.msg || "").trim()
     if (
       !config.parser_lazy_download ||
@@ -212,6 +229,15 @@ export class ParserCommandPlugin extends Plugin {
       return
     }
     try {
+      if (config.parser_disabled_platforms.includes(claimed.result.platform?.name)) {
+        finishLazyResult(claimed.key)
+        return false
+      }
+      if (shouldBlockResult(claimed.result)) {
+        finishLazyResult(claimed.key)
+        await this.reply(BLOCKED_CONTENT_MESSAGE)
+        return
+      }
       await reaction(this.e, "resolving")
       await renderContents(this.e, claimed.result)
       finishLazyResult(claimed.key)

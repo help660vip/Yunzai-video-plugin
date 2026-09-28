@@ -91,11 +91,11 @@ try {
 
   clearRegistryForTests()
   registerParser(YouTubeParser)
-  assert.ok(matchUrl("https://youtu.be/EKkzbbLYPuI"))
+  assert.ok(matchUrl("https://youtu.be/abcdefghijk"))
   saveConfig({ parser_disabled_platforms: ["youtube"] }, temporaryConfig)
-  assert.equal(matchUrl("https://youtu.be/EKkzbbLYPuI"), null)
+  assert.equal(matchUrl("https://youtu.be/abcdefghijk"), null)
   saveConfig({ parser_disabled_platforms: [] }, temporaryConfig)
-  assert.ok(matchUrl("https://youtu.be/EKkzbbLYPuI"))
+  assert.ok(matchUrl("https://youtu.be/abcdefghijk"))
 
   globalThis.plugin = class {
     constructor(options) {

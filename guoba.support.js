@@ -9,6 +9,8 @@ export const GUOBA_SECRET_MASK = "••••••••"
 
 const SECRET_FIELDS = new Set([
   "parser_bili_ck",
+  "parser_bili_access_key",
+  "parser_x_ck",
   "parser_ytb_ck",
   "parser_xhs_ck",
   "parser_zhihu_ck",
@@ -68,6 +70,8 @@ export const guobaSchemas = [
   switchField("parser_embed_url", "附加播放链接"),
   switchField("parser_append_qrcode", "附加链接二维码"),
   switchField("parser_need_forward_contents", "图文使用合并转发"),
+  switchField("parser_summary_in_forward", "总结卡加入合并转发", "懒下载模式下总结卡仍单独发送。"),
+  switchField("parser_video_in_forward", "视频加入合并转发", "适配器上传失败时自动尝试单独发送。"),
   numberField("parser_forward_text_threshold", "长文本转发阈值", 0, 4500),
   numberField("parser_max_comments", "最大评论数", 0, 20),
   numberField("parser_max_retries", "下载重试次数", 0, 20),
@@ -84,6 +88,8 @@ export const guobaSchemas = [
 
   group("账号、Cookie 与网络"),
   inputField("parser_bili_ck", "B站 Cookie", { secret: true }),
+  inputField("parser_bili_access_key", "B站 Access Key", { secret: true }),
+  inputField("parser_x_ck", "X Cookie", { secret: true }),
   inputField("parser_ytb_ck", "YouTube Cookie", { secret: true }),
   inputField("parser_xhs_ck", "小红书 Cookie", { secret: true }),
   inputField("parser_zhihu_ck", "知乎 Cookie", { secret: true }),
@@ -105,16 +111,27 @@ export const guobaSchemas = [
     label: "视频清晰度",
     component: "Select",
     componentProps: {
-      options: [16, 32, 64, 80, 112, 116, 120].map(value => ({
+      options: [5, 6, 16, 32, 64, 74, 80, 100, 112, 116, 120, 127].map(value => ({
         label: String(value),
         value,
       })),
     },
   },
   inputField("parser_bili_cdn_region", "CDN 地区"),
+  {
+    field: "parser_bili_audio_quality",
+    label: "音频音质上限",
+    component: "Select",
+    componentProps: {
+      options: [[30216, "64K"], [30232, "132K"], [30280, "192K"], [30250, "Dolby"], [30251, "Hi-Res"]]
+        .map(([value, label]) => ({ value, label })),
+    },
+  },
   inputField("parser_bili_cdn_domain", "自定义 bilivideo.com CDN"),
 
   group("渲染"),
+  inputField("parser_render_theme", "渲染主题 ID", { help: "主题放在 data/themes 中；保存后即时生效。" }),
+  tagsField("parser_theme_dirs", "额外主题目录", [], "仅加载本机可信主题；无效主题自动回退。"),
   {
     field: "parser_render_type",
     label: "渲染方式",
