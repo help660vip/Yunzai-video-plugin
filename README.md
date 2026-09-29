@@ -86,6 +86,8 @@
 | FFmpeg | 推荐，并加入 `PATH` | 音视频合并、转码、HLS 转封装、Live Photo |
 | yt-dlp | YouTube / TikTok / `ym` 需要 | 获取海外平台音视频 |
 
+信息卡默认优先借用 Yunzai 已有的 Puppeteer 浏览器，再检查实际依赖配套的浏览器、当前用户缓存和系统浏览器；无需让宿主与插件使用相同 Puppeteer 版本。候选必须通过本地截图验证，不会自动安装浏览器。显式浏览器配置、Linux 环境诊断及回退规则见 [渲染环境说明](docs/RENDERING.md)。
+
 在 Yunzai 根目录执行：
 
 ```bash
