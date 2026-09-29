@@ -15,7 +15,8 @@ import { closeRenderer, renderAndSend, renderCard } from "../lib/render/renderer
 const tests = []
 const test = (name, run) => tests.push([name, run])
 const original = { config: { ...config }, segment: globalThis.segment, logger: globalThis.logger,
-  withPage: browserManager.withPage, reportFailure: browserManager.reportFailure, pngToWebp: ffmpeg.pngToWebp }
+  withPage: browserManager.withPage, reportFailure: browserManager.reportFailure,
+  pngToJpeg: ffmpeg.pngToJpeg, pngToWebp: ffmpeg.pngToWebp }
 const root = await fs.mkdtemp(path.join(cacheDir, "renderer-host-unit-"))
 const generated = new Set(), pages = [], calls = [], reported = []
 const unique = path.basename(root)
@@ -93,19 +94,29 @@ test("renderAndSend passes its exact event through renderCard to the manager", a
   assert.equal(pages[0].closes, 1)
 })
 
-test("bot summary cards stay PNG even when WebP conversion is available", async () => {
+test("bot summary cards use JPEG image segments beyond the old file threshold", async () => {
   mockManager()
-  let webpCalls = 0
-  const unavailable = ffmpeg.pngToWebp
+  let jpegCalls = 0, webpCalls = 0
+  const previousJpeg = ffmpeg.pngToJpeg, previousWebp = ffmpeg.pngToWebp
+  ffmpeg.pngToJpeg = async () => {
+    jpegCalls++
+    const bytes = Buffer.alloc(5 * 1024 * 1024 + 1)
+    bytes[0] = 0xff; bytes[1] = 0xd8; bytes[bytes.length - 2] = 0xff; bytes[bytes.length - 1] = 0xd9
+    return bytes
+  }
   ffmpeg.pngToWebp = async () => { webpCalls++; return Buffer.from("synthetic-webp") }
-  const result = post("png-summary")
+  const e = event("jpeg-summary"), result = post("jpeg-summary")
   try {
-    await send(event("png-summary"), result, { sendContents: false })
+    await send(e, result, { sendContents: false })
+    assert.equal(jpegCalls, 1)
     assert.equal(webpCalls, 0)
-    assert.equal(path.extname(result.renderImage), ".png")
-    assert.equal(PNG.sync.read(await fs.readFile(result.renderImage)).width, 4)
+    assert.equal(path.extname(result.renderImage), ".jpg")
+    assert((await fs.stat(result.renderImage)).size > 5 * 1024 * 1024)
+    assert.equal(e.replies[0][0].type, "image")
+    assert.equal(e.replies[0][0].name, undefined)
   } finally {
-    ffmpeg.pngToWebp = unavailable
+    ffmpeg.pngToJpeg = previousJpeg
+    ffmpeg.pngToWebp = previousWebp
   }
 })
 
@@ -251,6 +262,7 @@ try {
   globalThis.segment = {}
   globalThis.logger = Object.fromEntries(["debug", "info", "warn", "error", "mark", "success"].map(level => [level, () => {}]))
   browserManager.reportFailure = error => reported.push(error)
+  ffmpeg.pngToJpeg = async () => { throw new Error("synthetic JPEG fallback") }
   ffmpeg.pngToWebp = async () => { throw new Error("synthetic PNG fallback") }
   for (const [name, run] of tests) {
     Object.assign(config, original.config, { parser_render_type: "common", parser_render_theme: "default", parser_theme_dirs: [],
@@ -267,13 +279,14 @@ try {
 } finally {
   browserManager.withPage = original.withPage
   browserManager.reportFailure = original.reportFailure
+  ffmpeg.pngToJpeg = original.pngToJpeg
   ffmpeg.pngToWebp = original.pngToWebp
   Object.assign(config, original.config)
   globalThis.segment = original.segment
   globalThis.logger = original.logger
   for (const filename of generated) {
     assert.equal(path.dirname(filename), cacheDir)
-    assert(/^render-[a-f0-9]+\.(png|webp)$/.test(path.basename(filename)))
+    assert(/^render-[a-f0-9]+\.(png|jpg|webp)$/.test(path.basename(filename)))
     await fs.unlink(filename).catch(() => {})
   }
   assert.equal(path.dirname(root), cacheDir)
