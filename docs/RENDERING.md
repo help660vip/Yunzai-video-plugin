@@ -1,6 +1,6 @@
 # 渲染环境
 
-`common` / `htmlrender` 信息卡使用 Puppeteer；`htmlkit` 沿用回退到 `common` 的行为。浏览器不可用时回退到 `default` 文本输出，解析、下载和媒体发送仍按原配置执行。主题、字体、评论、二维码、长图和 PNG / WebP 输出规则不变。
+`common` / `htmlrender` 信息卡使用 Puppeteer；`htmlkit` 沿用回退到 `common` 的行为。浏览器不可用时回退到 `default` 文本输出，解析、下载和媒体发送仍按原配置执行。主题、字体、评论、二维码和长图规则不变。机器人实际发送的信息卡固定为 PNG，以兼容 OneBot / QQ 富媒体上传；公共 `renderCard()` 接口仍保留显式 PNG 和自动 WebP 输出能力。
 
 ## 默认选择顺序
 

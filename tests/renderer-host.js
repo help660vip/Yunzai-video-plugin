@@ -93,6 +93,22 @@ test("renderAndSend passes its exact event through renderCard to the manager", a
   assert.equal(pages[0].closes, 1)
 })
 
+test("bot summary cards stay PNG even when WebP conversion is available", async () => {
+  mockManager()
+  let webpCalls = 0
+  const unavailable = ffmpeg.pngToWebp
+  ffmpeg.pngToWebp = async () => { webpCalls++; return Buffer.from("synthetic-webp") }
+  const result = post("png-summary")
+  try {
+    await send(event("png-summary"), result, { sendContents: false })
+    assert.equal(webpCalls, 0)
+    assert.equal(path.extname(result.renderImage), ".png")
+    assert.equal(PNG.sync.read(await fs.readFile(result.renderImage)).width, 4)
+  } finally {
+    ffmpeg.pngToWebp = unavailable
+  }
+})
+
 test("concurrent renders keep per-message context and pages isolated", async () => {
   mockManager(() => pageMock(), async e => { if (e.name === "first") await pause(15) })
   const first = event("first"), second = event("second")
