@@ -434,7 +434,7 @@ test("米游社有序富文本支持链接卡、贴纸、B站嵌入与评论", (
   assert.equal(result.comments[0].replies.length, 1)
   const sticker = result.content.find(item => item instanceof StickerContent)
   assert.equal(sticker.pathTask.url, MIYOUSHE_STICKERS["星谷米游姬-好耶"])
-  assert.equal(Object.keys(MIYOUSHE_STICKERS).length, 3154)
+  assert.equal(Object.keys(MIYOUSHE_STICKERS).length, 3178)
   assert.deepEqual(
     new MiyousheApiParser().buildStructured(
       JSON.stringify([{ insert: "_(不存在的测试表情)" }]),

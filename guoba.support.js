@@ -32,6 +32,13 @@ const numberField = (field, label, min, max, addonAfter) => ({
   required: true,
   componentProps: { min, max, ...(addonAfter ? { addonAfter } : {}) },
 })
+const optionalNumberField = (field, label, min, max, addonAfter, help) => ({
+  field,
+  label,
+  component: "InputNumber",
+  componentProps: { min, max, ...(addonAfter ? { addonAfter } : {}) },
+  bottomHelpMessage: help,
+})
 const inputField = (field, label, options = {}) => ({
   field,
   label,
@@ -66,6 +73,14 @@ export const guobaSchemas = [
   switchField("parser_use_base64", "媒体转 Base64", "仅跨机器人的协议端可能需要。"),
   numberField("parser_max_size", "单个媒体上限", 1, 2048, "MB"),
   numberField("parser_duration_maximum", "媒体时长上限", 1, 86400, "秒"),
+  optionalNumberField(
+    "parser_file_upload_timeout",
+    "文件上传等待超时",
+    1,
+    86400,
+    "秒",
+    "留空时沿用适配器默认等待时间；仅作用于文件上传。",
+  ),
   switchField("parser_append_url", "附加原始链接"),
   switchField("parser_embed_url", "附加播放链接"),
   switchField("parser_append_qrcode", "附加链接二维码"),
@@ -143,6 +158,18 @@ export const guobaSchemas = [
       })),
     },
   },
+  {
+    field: "parser_render_format",
+    label: "卡片图片格式",
+    component: "Select",
+    componentProps: {
+      options: [
+        { label: "JPEG（兼容性优先）", value: "jpeg" },
+        { label: "PNG", value: "png" },
+        { label: "WebP", value: "webp" },
+      ],
+    },
+  },
   inputField("parser_custom_font", "自定义字体文件"),
   numberField("parser_custom_font_weight", "标题字体粗细", 100, 1000),
   inputField("parser_emoji_cdn", "Emoji CDN"),
@@ -195,6 +222,10 @@ function preparePatch(data) {
       patch[key] = value === "" || value === undefined ? null : value
       continue
     }
+    if (key === "parser_file_upload_timeout" && (value === "" || value === undefined)) {
+      patch[key] = null
+      continue
+    }
     patch[key] = value
   }
   return patch
@@ -211,7 +242,7 @@ export function supportGuoba({ save = saveConfig } = {}) {
     pluginInfo: {
       name: "yunzai-video-plugin",
       title: "Yunzai Video Plugin",
-      description: "32个平台的链接、视频、图文与音乐解析插件",
+      description: "33个平台的链接、视频、图文与音乐解析插件",
       author: "@help660vip",
       authorLink: "https://github.com/help660vip",
       link: "https://github.com/help660vip/Yunzai-video-plugin",

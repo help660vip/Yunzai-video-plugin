@@ -308,8 +308,9 @@ test("抖音视频使用原比例封面，米游社表情资源映射完整", ()
     },
   })
   assert.equal(result.videoContents[0].cover.url, "https://img.invalid/original.jpg")
-  assert.equal(Object.keys(MIYOUSHE_STICKERS).length, 3154)
+  assert.equal(Object.keys(MIYOUSHE_STICKERS).length, 3178)
   assert.ok(MIYOUSHE_STICKERS["星谷米游姬-好耶"])
+  assert.ok(MIYOUSHE_STICKERS["小小月兔-爱心"])
 })
 
 let failures = 0

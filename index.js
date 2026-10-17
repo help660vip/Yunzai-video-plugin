@@ -38,8 +38,8 @@ if (!Plugin) throw new Error("Yunzai Video Plugin 必须由 Miao-Yunzai / TRSS-Y
 
 function commandRules() {
   const rules = [
-    { reg: "^开启解析$", fnc: "enableParser", permission: "admin" },
-    { reg: "^关闭解析$", fnc: "disableParser", permission: "admin" },
+    { reg: "^开启解析(?:\\s+[^\\s]+)?$", fnc: "enableParser", permission: "admin" },
+    { reg: "^关闭解析(?:\\s+[^\\s]+)?$", fnc: "disableParser", permission: "admin" },
     { reg: "^bm(?:\\s+.*)?$", fnc: "bilibiliMusic" },
     { reg: "^blogin$", fnc: "bilibiliLogin", permission: "master" },
   ]
@@ -57,7 +57,7 @@ export class ParserMessagePlugin extends Plugin {
   constructor() {
     super({
       name: "链接分享解析",
-      dsc: "支持 32 个国内外视频、社区和音乐平台的链接分享解析",
+      dsc: "支持 33 个国内外视频、社区和音乐平台的链接分享解析",
       event: "message",
       priority: 5,
       rule: [],
@@ -103,15 +103,30 @@ export class ParserCommandPlugin extends Plugin {
   }
 
   async enableParser() {
-    if (!this.e.isGroup || !this.e.atBot) return false
-    setEnabled(this.e, true)
-    await this.reply("解析已开启")
+    return this.changeParserState(true)
   }
 
   async disableParser() {
-    if (!this.e.isGroup || !this.e.atBot) return false
-    setEnabled(this.e, false)
-    await this.reply("解析已关闭")
+    return this.changeParserState(false)
+  }
+
+  async changeParserState(enabled) {
+    const message = String(this.e?.msg || "").trim()
+    const target = /^(?:开启|关闭)解析(?:\s+(.+))?$/.exec(message)?.[1]?.trim() || null
+    const isMaster = Boolean(this.e?.isMaster || this.e?.master)
+    if (target && !isMaster) {
+      await this.reply("只有主人可以指定其他群或用户")
+      return
+    }
+    if (!target && this.e?.isGroup && !this.e?.atBot) return false
+    if (!target && !this.e?.isGroup && !isMaster) return false
+    const normalizedTarget = target
+      ? /^(?:group|user|private):/i.test(target)
+        ? target
+        : (this.e?.isGroup ? "group:" : "user:") + target
+      : null
+    const changed = setEnabled(this.e, enabled, normalizedTarget)
+    await this.reply(`解析已${enabled ? "开启" : "关闭"}${changed ? "" : "，无需重复操作"}`)
   }
 
   async bilibiliMusic() {

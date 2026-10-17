@@ -35,6 +35,10 @@ parser_need_upload_audio: false
 # 视频解析后是否在普通视频消息之外额外上传文件；显式设置时优先于总开关。
 parser_need_upload_video: false
 
+# 文件上传等待超时（秒）；null 沿用适配器默认等待时间。
+# 只限制文件上传，不影响普通图片、语音和视频消息。
+parser_file_upload_timeout: null
+
 # 是否把图片、音频、视频和文件转为 Base64 消息段。
 # 跨机器协议端才可能需要；会增加内存、带宽和 WebSocket 压力。
 parser_use_base64: false
@@ -86,6 +90,10 @@ parser_bili_cdn_domain: null
 # 渲染方式：default、common、htmlrender、htmlkit。
 # default 为纯文本；浏览器不可用时其他模式自动降级。
 parser_render_type: common
+
+# 渲染卡片图片格式：jpeg、png、webp。默认 jpeg 以兼容常见 QQ 协议端。
+# 无论格式和大小如何，卡片都作为图片消息发送，不会改成文件。
+parser_render_format: jpeg
 
 # 本地主题 ID，主题放在 data/themes；不可用时回退到 default。
 parser_render_theme: default

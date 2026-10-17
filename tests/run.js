@@ -228,7 +228,7 @@ test("内置解析器注册并匹配原触发边界", async () => {
   assert.equal(matchUrl("https://www.xiaohongshu.com/discovery/item/1234567890abcdef12345678")?.ParserClass, XiaohongshuParser)
 })
 
-test("全部 32 个平台均注册并路由真实分享 URL", async () => {
+test("全部 33 个平台均注册并路由真实分享 URL", async () => {
   await registerBuiltinParsers()
   const samples = {
     acfun: "https://www.acfun.cn/v/ac123",
@@ -253,6 +253,7 @@ test("全部 32 个平台均注册并路由真实分享 URL", async () => {
     nga: "https://bbs.nga.cn/read.php?tid=1",
     netease: "https://music.163.com/song?id=1",
     qsmusic: "https://qishui.douyin.com/s/abc/",
+    qqmusic: "https://y.qq.com/n/ryqq_v2/songDetail/0039MnYb0qxYhV",
     taptap: "https://www.taptap.cn/moment/1",
     tieba: "https://tieba.baidu.com/p/1",
     tiktok: "https://www.tiktok.com/@demo/video/1",
@@ -264,7 +265,7 @@ test("全部 32 个平台均注册并路由真实分享 URL", async () => {
     zhihu: "https://www.zhihu.com/question/1/answer/2",
     zlb: "https://zlb.ink/t/topic/1",
   }
-  assert.equal(Object.keys(samples).length, 32)
+  assert.equal(Object.keys(samples).length, 33)
   for (const [platform, url] of Object.entries(samples)) {
     assert.equal(matchUrl(url)?.parser.platform.name, platform, platform + " 路由失败")
   }

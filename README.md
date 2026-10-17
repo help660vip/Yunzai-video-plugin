@@ -64,6 +64,7 @@
 | **酷狗音乐** | ✓ | — | — | — | ✓ |
 | **汽水音乐** | ✓ | — | — | — | ✓ |
 | **酷我音乐** | ✓ | — | — | — | ✓ |
+| **QQ音乐** | ✓ | — | — | — | ✓ |
 
 > **标识说明**
 >
@@ -114,10 +115,10 @@ pnpm --dir ./plugins/yunzai-video-plugin install
 ## 特性
 
 - 发链接即用：自动从普通文本、引用消息和 QQ JSON 分享卡片中提取链接，默认解析后立即下载并发送媒体。
-- 32 个平台：统一处理短链、图文、视频、音乐、评论与楼中楼、贴纸、Live Photo、引用、投票、AI 摘要和链接卡。
+- 33 个平台：统一处理短链、图文、视频、音乐、评论与楼中楼、贴纸、Live Photo、引用、投票、AI 摘要和链接卡。
 - 有序富文本：文本、图片、视频、贴纸、链接与引用保持原有顺序，支持九宫格和长文本转发。
 - 稳定下载：动态媒体 URL 使用稳定缓存键并按文件特征识别真实格式；支持 identity 编码、严格断点续传、多 CDN 轮换、音频格式自动修正、流式大小限制、重试、FFmpeg 合并、HLS 转封装和失败降级。
-- 丰富渲染：本地自定义主题、浅色 / 深色模式、统计、评论、投票、二维码和音乐卡；浏览器不可用时自动回退到纯文本。
+- 丰富渲染：本地自定义主题、浅色 / 深色模式、统计、评论、带图投票、二维码和音乐卡；支持选择 JPEG、PNG 或 WebP，浏览器不可用时自动回退到纯文本。
 - 可选懒下载：开启后先发送解析结果，只有用户发送配置的下载命令时才下载媒体，可设置提示和超时。
 - 权限控制：群黑 / 白名单、用户黑名单、平台禁用列表，以及群管理员开启 / 关闭解析命令。
 - 轻量启动：平台注册保持固定以支持锅巴热更新，解析器实例只在首次命中时初始化；平台解析不依赖浏览器。
@@ -173,8 +174,8 @@ R18 拦截默认开启，但**只检查配置列表内的海外平台**：`twitt
 | :--- | :--- | :--- |
 | 凭据 | `parser_bili_ck`、`parser_bili_access_key`、`parser_x_ck`、`parser_ytb_ck`、`parser_xhs_ck`、`parser_zhihu_ck`、`parser_linuxdo_ck` | 对应平台 Cookie 或 B站 Access Key，可留空 |
 | 网络 | `parser_proxy`、`parser_max_retries`、`parser_max_size`、`parser_duration_maximum` | 代理、重试及下载限制 |
-| 发送 | `parser_need_upload*`、`parser_use_base64`、`parser_need_forward_contents`、`parser_summary_in_forward`、`parser_video_in_forward` | 上传与消息发送方式 |
-| 展示 | `parser_render_type`、`parser_render_theme`、`parser_theme_dirs`、`parser_day_range`、字体、二维码 | 信息卡和附加内容 |
+| 发送 | `parser_need_upload*`、`parser_file_upload_timeout`、`parser_use_base64`、`parser_need_forward_contents`、`parser_summary_in_forward`、`parser_video_in_forward` | 上传等待时间与消息发送方式 |
+| 展示 | `parser_render_type`、`parser_render_format`、`parser_render_theme`、`parser_theme_dirs`、`parser_day_range`、字体、二维码 | 信息卡格式和附加内容 |
 | 下载 | `parser_lazy_download*`、`parser_download_command`、`parser_live_photo` | 懒下载及 Live Photo |
 | 过滤 | `parser_disabled_platforms`、`parser_blacklist_users`、群名单、R18 配置 | 解析范围和安全门 |
 | 缓存 | `parser_cache_retention_hours`、`parser_cache_max_mb` | 默认保留 24 小时，最大 1 GiB |
@@ -209,6 +210,8 @@ parser_download_command:
 > Cookie、Access Key 和 Refresh Token 具有账号权限，配置与登录数据以明文存储。请勿截图分享、提交到 GitHub 或发送给不可信第三方；反馈问题前务必脱敏。
 
 - `blogin` 获取的 B站 Cookie 保存在 `data/bilibili_cookies.json`，App 登录凭据（Access Key / Refresh Token）保存在 `data/bilibili_access.json`。
+- 配置 Linux Do Cookie 后，服务端轮换的会话 Cookie 会保存到 `data/linuxdo_cookies.txt`；更换账号身份 Cookie 时会自动切换会话。
+- 配置有效 B站登录凭据后，插件会同步该账号的 B站用户黑名单，并在解析前拦截其中的 UP 主内容。
 - YouTube Cookie 会转换到 `config/ytb_cookies.txt` 供 `yt-dlp` 使用。
 - 群开关、媒体缓存和渲染缓存位于 `data/`。插件启动、每天 `01:00` 及解析期间都会检查缓存；默认删除超过 24 小时的文件，并在超过 1 GiB 时优先清理最旧文件。
 - `data/` 被 Git 忽略，但 `config/config.yaml` 会被版本控制追踪，不要写入准备公开的真实凭据。
@@ -219,8 +222,8 @@ parser_download_command:
 
 | 命令 | 参数 | 权限 / 场景 | 说明 |
 | :--- | :--- | :--- | :--- |
-| `@机器人 开启解析` | 无 | 主人 / 群主 / 管理员，群聊 | 在当前群名单模式下开启解析 |
-| `@机器人 关闭解析` | 无 | 主人 / 群主 / 管理员，群聊 | 在当前群名单模式下关闭解析 |
+| `@机器人 开启解析 [目标]` | 可选 `group:群号` / `user:用户号` | 当前群可由主人 / 群主 / 管理员操作；指定目标仅主人 | 为当前会话或指定目标开启解析 |
+| `@机器人 关闭解析 [目标]` | 可选 `group:群号` / `user:用户号` | 当前群可由主人 / 群主 / 管理员操作；指定目标仅主人 | 为当前会话或指定目标关闭解析 |
 | `bm BV号 [分P]` | BV 号，可选分P序号 | 全部用户 | 提取 B站音频并发送语音 |
 | `ym YouTube链接` | YouTube 链接 | 全部用户，需 `yt-dlp` | 提取 YouTube 音频并发送语音 |
 | `blogin` | 无 | 仅主人私聊 | 扫码获取并保存 B站凭据 |
@@ -278,7 +281,7 @@ git diff --check
 ├─ index.js          # Yunzai 插件入口、命令与定时任务
 ├─ config/           # 用户配置
 ├─ lib/core/         # 模型、注册、下载、缓存、安全与消息适配
-├─ lib/parsers/      # 32 个平台解析器
+├─ lib/parsers/      # 33 个平台解析器
 ├─ lib/render/       # 纯文本与 Puppeteer 信息卡渲染
 ├─ resources/        # 字体、图标和兜底资源
 ├─ scripts/          # 开发检查脚本

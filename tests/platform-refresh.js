@@ -185,6 +185,7 @@ test("X primary result can retain optional comment trees without losing stronger
     json: async url => {
       count++
       if (url.includes("/TweetResultByRestId")) return { data: { tweetResult: { result: original } } }
+      if (url.includes("/grok/translation.json")) return { result: { text: "原文译文" } }
       assert.equal(url, "https://easycomment.ai/api/twitter/v1/free/get-tweet-detail")
       return { code: 100000, data: { data: { threaded_conversation_with_injections_v2: { instructions: [{
         type: "TimelineAddEntries", entries: [secondary, comment].map(result => ({
@@ -197,7 +198,7 @@ test("X primary result can retain optional comment trees without losing stronger
     assert.equal(result.text, "Original")
     assert.equal(result.comments[0].content[0], "Reply")
     assert.equal(result.safety.sensitive, true)
-    assert.equal(count, 2)
+    assert.equal(count, 3)
   }))
 })
 
