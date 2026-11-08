@@ -127,11 +127,15 @@ test("only explicit media-upload errors trigger fallback", () => {
 test("forward fallback without a builder contains only flat message segments", async () => {
   const replies = []
   const image = { type: "image", file: pixel }
-  await sendForward({ reply: async message => {
-    assert(message.every(item => typeof item === "string" || typeof item?.type === "string"))
-    replies.push(message)
-  } }, [["caption", image], "second node"], result({}))
-  assert.deepEqual(replies, [["caption", image, "\n", "second node"]])
+  const previous = config.parser_forward_text_threshold
+  try {
+    config.parser_forward_text_threshold = 1000
+    await sendForward({ reply: async message => {
+      assert(message.every(item => typeof item === "string" || typeof item?.type === "string"))
+      replies.push(message)
+    } }, [["caption", image], "second node"], result({}))
+    assert.deepEqual(replies, [["caption", image, "\n", "second node"]])
+  } finally { config.parser_forward_text_threshold = previous }
 })
 
 test("a failing forward builder also degrades to flat ordinary messages", async () => {
