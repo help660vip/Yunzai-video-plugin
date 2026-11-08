@@ -19,6 +19,8 @@ const SECRET_FIELDS = new Set([
 ])
 
 const platformOptions = PLATFORM_NAMES.map(value => ({ label: value, value }))
+const componentOptions = [["card", "总结卡片"], ["url", "原始链接"], ["embed", "播放链接"], ["content", "图文正文"], ["cover", "视频封面"], ["video", "视频"], ["audio", "音频"]].map(([value, label]) => ({ value, label }))
+const legacyComponentOptions = [{ value: "__legacy__", label: "沿用旧版开关" }, ...componentOptions]
 const switchField = (field, label, bottomHelpMessage) => ({
   field,
   label,
@@ -67,6 +69,8 @@ const group = label => ({ label, component: "SOFT_GROUP_BEGIN" })
 
 export const guobaSchemas = [
   group("基础与发送"),
+  multiField("parser_send_components", "发送内容组件", legacyComponentOptions, "选择“沿用旧版开关”或显式清单；总结卡片始终保留。"),
+  multiField("parser_forward_components", "合并转发组件", legacyComponentOptions, "选择进入合并转发的组件；清空使用直接发送，“沿用旧版开关”保留兼容模式。"),
   switchField("parser_need_upload", "音视频上传总开关", "兼容旧配置；独立开关显式设置后优先。"),
   switchField("parser_need_upload_audio", "额外上传音频文件"),
   switchField("parser_need_upload_video", "额外上传视频文件"),
@@ -143,6 +147,12 @@ export const guobaSchemas = [
     },
   },
   inputField("parser_bili_cdn_domain", "自定义 bilivideo.com CDN"),
+  inputField("parser_bsb_api_base", "B站空降辅助服务地址", { help: "可选 HTTP(S) 服务地址；同时选择片段分类后才查询并处理。" }),
+  tagsField("parser_bsb_categories", "裁切片段分类", ["sponsor", "intro", "outro", "interaction", "selfpromo", "preview", "filler", "music_offtopic"].map(value => ({ label: value, value }))),
+
+  group("媒体预处理"),
+  tagsField("parser_media_speedup_rules", "按作者调整媒体倍速", [], "格式：平台:作者ID:倍速，如 bilibili:123456:1.25；支持 0.1～16 倍。"),
+  numberField("parser_media_transcode_concurrency", "转码并发数", 1, 8),
 
   group("渲染"),
   inputField("parser_render_theme", "渲染主题 ID", { help: "主题放在 data/themes 中；保存后即时生效。" }),
@@ -195,13 +205,22 @@ export const guobaSchemas = [
   numberField("parser_cache_retention_hours", "缓存保留时间", 1, 8760, "小时"),
   numberField("parser_cache_max_mb", "缓存容量上限", 1, 1048576, "MB"),
   switchField("parser_dedup_enabled", "同群内容去重"),
-  numberField("parser_dedup_window_seconds", "去重窗口", 1, 3600, "秒"),
+  numberField("parser_dedup_window_seconds", "去重窗口", 0, 86400, "秒"),
+  multiField("parser_dedup_platforms", "应用去重的平台", [{ value: "__all__", label: "全部平台" }, ...platformOptions], "选择“全部平台”或具体平台；清空关闭所有平台的会话去重。窗口为 0 时只合并并发重复。"),
 ]
 
 function getConfigData() {
   const data = {}
   for (const key of Object.keys(DEFAULT_CONFIG)) {
     const value = config[key]
+    if ((key === "parser_send_components" || key === "parser_forward_components") && value === null) {
+      data[key] = ["__legacy__"]
+      continue
+    }
+    if (key === "parser_dedup_platforms" && value === null) {
+      data[key] = ["__all__"]
+      continue
+    }
     data[key] = SECRET_FIELDS.has(key) && value ? GUOBA_SECRET_MASK : structuredCloneValue(value)
   }
   return data
@@ -224,6 +243,18 @@ function preparePatch(data) {
     }
     if (key === "parser_file_upload_timeout" && (value === "" || value === undefined)) {
       patch[key] = null
+      continue
+    }
+    if ((key === "parser_send_components" || key === "parser_forward_components") && value?.includes?.("__legacy__")) {
+      patch[key] = null
+      continue
+    }
+    if (key === "parser_dedup_platforms" && value?.includes?.("__all__")) {
+      patch[key] = null
+      continue
+    }
+    if (key === "parser_send_components" && Array.isArray(value)) {
+      patch[key] = [...new Set(["card", ...value])]
       continue
     }
     patch[key] = value

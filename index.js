@@ -4,6 +4,8 @@ import QRCode from "qrcode"
 
 import { resultCache } from "./lib/core/cache.js"
 import { cacheLifecycle, scheduleCacheCleanup } from "./lib/core/cache-lifecycle.js"
+import { cacheIndex } from "./lib/core/cache-index.js"
+import { warmupThemes } from "./lib/render/renderer.js"
 import { config, onConfigChange } from "./lib/core/config.js"
 import { downloader } from "./lib/core/downloader.js"
 import { handleParserEvent } from "./lib/core/engine.js"
@@ -65,6 +67,8 @@ export class ParserMessagePlugin extends Plugin {
   }
 
   async init() {
+    await cacheIndex.warmup()
+    await warmupThemes()
     const cleanup = await scheduleCacheCleanup({ force: true, reason: "startup" })
     log.info(`[parser] 启动缓存检查完成：清理 ${cleanup.deletedFiles || 0} 个文件`)
     log.info(`[parser] 启用平台: ${enabledPlatforms().join(", ")}`)

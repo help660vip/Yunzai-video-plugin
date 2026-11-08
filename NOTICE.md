@@ -7,5 +7,6 @@
 - 贴吧协议与接口参考 [aiotieba](https://github.com/lumina37/aiotieba)。
 - 平台接口及签名资料参考 [amagi](https://github.com/ikenxuan/amagi)、[zhihu-plus-plus](https://github.com/zly2006/zhihu-plus-plus)，渲染与签名相关贡献包括 Uesugi Hanako 及相关贡献者。
 - 安装依赖的许可证随各依赖包提供；平台名称、图标和内容的权利归各自权利人所有。
+- 音乐与播放图标使用 [Font Awesome Free](https://fontawesome.com/) 的 SVG 路径，Copyright Fonticons, Inc.，依据 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) 使用；来源与版本信息保留在资源文件中。
 
 不得从再分发版本中移除适用的版权和许可通知。

@@ -174,3 +174,15 @@ parser_dedup_enabled: true
 
 # 相同链接或同一平台内容的去重窗口（秒）。
 parser_dedup_window_seconds: 30
+parser_dedup_platforms: null # null 检查全部平台；[] 不检查；0 秒窗口只抑制并发重复
+
+# 声明式发送组件，null 沿用上面的旧开关；显式清单优先
+# 可选 card/url/embed/content/cover/video/audio，card 始终保留
+parser_send_components: null
+parser_forward_components: null
+
+# 按平台和作者调整音视频倍速；不修改原始缓存文件
+parser_media_speedup_rules: [] # 如 ["bilibili:123456:1.25"]
+parser_media_transcode_concurrency: 1
+parser_bsb_api_base: null # B站空降辅助 HTTP(S) 服务地址
+parser_bsb_categories: [] # 如 [sponsor, intro]；与服务地址同时设置后启用
