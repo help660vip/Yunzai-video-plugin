@@ -266,7 +266,7 @@ test("Eight community APIs parse deterministic data without comment requests whe
           items: [{ author_id: "u", content: "Body", pictures: [{ image_url: picture }], ups_num: 1 }] } }],
       [DsParser, "https://ds.163.com/feed/abc", "https://inf.ds.163.com/v1/web/feed/basic/facade",
         { code: 200, result: { feed: { id: "abc", uid: "u", content: JSON.stringify({ body: { title: "Title", longText: "<h2>Body</h2><a href='/path'>Link</a>" } }), record: {} }, userInfos: [{ user: { uid: "u", nick: "Author" } }] } }],
-      [DuitangParser, "https://www.duitang.com/atlas?id=1", "https://www.duitang.com/napi/vienna/atlas/detail/",
+      [DuitangParser, "https://www.duitang.com/atlas?id=1", "https://xapi.duitang.com/napi/vienna/atlas/detail/",
         { status: 1, data: { id: 1, desc: "Body", sender: { username: "Author" }, blogs: [{ photo: { path: picture } }] } }],
       [FiveEPlayParser, "https://csgo.5eplay.com/forum/1", "https://app.5eplay.com/api/csgo/forum/topic/1",
         { success: true, data: { content: { tid: "1", username: "Author", title: "Title", intro_text: "Body", images: [picture], video_data: { video_url: media }, share_data: {} }, comments: { total: 1, list: [{ content: "Do not show" }] } } }],

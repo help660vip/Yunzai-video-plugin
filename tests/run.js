@@ -870,26 +870,26 @@ test("四个音乐平台用固定响应构造音乐卡与懒音频任务", async
   const originalRequest = http.request
   try {
     http.json = async url => {
-      if (url.endsWith("/getSongInfo")) {
+      if (url.endsWith("/api/song/detail")) {
         return {
           code: 200,
-          data: {
+          songs: [{
             name: "网易云夹具",
-            singer: "歌手 A",
-            album: "专辑 A",
-            picimg: "https://img.invalid/netease.jpg",
-            duration: "01:02",
-          },
+            artists: [{ name: "歌手 A" }],
+            album: { name: "专辑 A", picUrl: "https://img.invalid/netease.jpg" },
+            duration: 62000,
+          }],
         }
       }
-      if (url.endsWith("/getSongLyric")) {
-        return { code: 200, data: { lrc: "第一句\n第二句" } }
-      }
-      if (url.endsWith("/getSongUrl")) {
-        return { code: 200, data: { url: "https://audio.invalid/netease.mp3" } }
+      if (url.endsWith("/api/song/lyric")) {
+        return { code: 200, lrc: { lyric: "第一句\n第二句" } }
       }
       throw new Error("unexpected netease request: " + url)
     }
+    http.request = async () => ({
+      status: 302,
+      headers: new Map([["location", "https://audio.invalid/netease.mp3"]]),
+    })
     const netease = await new NeteaseParser().parse([
       "music.163.com/song?id=101",
       "101",
@@ -927,21 +927,17 @@ test("四个音乐平台用固定响应构造音乐卡与懒音频任务", async
     assert.equal(kugou.audioContents[0].pathTask.url, "https://audio.invalid/kugou.mp3")
 
     http.json = async (url, options) => {
-      assert.equal(url, "https://parse-api.sokoko.org/api/kuwo/song/")
-      assert.deepEqual(options.params, { music_id: "303", quality: "320k" })
-      return {
-        code: 200,
-        data: {
-          title: "酷我夹具",
+      if (url.includes("datacenter.kuwo.cn")) return [{
+          name: "酷我夹具",
           artist: "歌手 C",
           album: "专辑 C",
-          cover: "https://img.invalid/kuwo.jpg",
-          download_url: "https://audio.invalid/kuwo.mp3",
-          duration_seconds: 33,
-          lyric: "酷我歌词",
-          quality: { name: "320K" },
-        },
-      }
+          albumpic: "https://img.invalid/kuwo.jpg",
+          duration: 33,
+        }]
+      if (url.includes("mobi.kuwo.cn")) return { url: "https://audio.invalid/kuwo.mp3" }
+      if (url.includes("getlyric")) return { code: 200, data: { lrclist: [{ time: "0", lineLyric: "酷我歌词" }] } }
+      if (url.includes("ncomment.kuwo.cn")) return { code: "200", comments: [] }
+      throw new Error("unexpected kuwo request: " + url)
     }
     const kuwo = await new KuwoParser().parse([
       "www.kuwo.cn/play_detail/303",
