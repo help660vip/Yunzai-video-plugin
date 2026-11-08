@@ -124,6 +124,23 @@ test("only explicit media-upload errors trigger fallback", () => {
   assert(!isMediaUploadError({ retcode: 1200 }))
 })
 
+test("forward fallback without a builder contains only flat message segments", async () => {
+  const replies = []
+  const image = { type: "image", file: pixel }
+  await sendForward({ reply: async message => {
+    assert(message.every(item => typeof item === "string" || typeof item?.type === "string"))
+    replies.push(message)
+  } }, [["caption", image], "second node"], result({}))
+  assert.deepEqual(replies, [["caption", image, "\n", "second node"]])
+})
+
+test("a failing forward builder also degrades to flat ordinary messages", async () => {
+  const replies = []
+  await sendForward({ group: { async makeForwardMsg() { throw new Error("synthetic unsupported builder") } },
+    reply: async message => replies.push(message) }, [["one"], ["two"]], result({}))
+  assert.deepEqual(replies, [["one", "\n", "two"]])
+})
+
 test("video fallback preserves text/images and text fallback retains source", () => {
   const image = { type: "image", file: pixel }
   const video = markMediaRole({ type: "file", file: videoFile }, "video")
