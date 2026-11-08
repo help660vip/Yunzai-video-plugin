@@ -6,7 +6,7 @@ import path from "node:path"
 import { CacheIndex } from "../lib/core/cache-index.js"
 import { config, validateConfig } from "../lib/core/config.js"
 import { sendComponent, forwardComponent } from "../lib/core/components.js"
-import { clearDedupForTests, runSessionParse, claimContent } from "../lib/core/dedup.js"
+import { clearDedupForTests, runSessionParse, claimContent, claimActiveContent } from "../lib/core/dedup.js"
 import { Creator } from "../lib/core/creator.js"
 import { ParseResult } from "../lib/core/model.js"
 import { renderContents } from "../lib/core/sender.js"
@@ -103,6 +103,21 @@ test("route cache identities ignore share parameters but retain handler and decl
   const page = matchUrl("https://route140.invalid/post/42?p=2")
   assert.equal(first.cacheKey, second.cacheKey)
   assert.notEqual(first.cacheKey, page.cacheKey)
+})
+
+test("different links sharing a content ID coalesce while active even with a zero-second window", () => {
+  config.parser_dedup_enabled = true
+  config.parser_dedup_platforms = null
+  config.parser_dedup_window_seconds = 0
+  const first = { platform: { name: "bilibili" }, contentId: "42", url: "https://example.invalid/short" }
+  const second = { ...first, url: "https://example.invalid/original" }
+  const release = claimActiveContent(event, first)
+  assert.equal(typeof release, "function")
+  assert.equal(claimActiveContent(event, second), null)
+  release()
+  const next = claimActiveContent(event, second)
+  assert.equal(typeof next, "function")
+  next()
 })
 
 test("queued parse failures retry once; started output is never repeated", async () => {
