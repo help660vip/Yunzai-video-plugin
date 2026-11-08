@@ -6,6 +6,7 @@ import { PNG } from "pngjs"
 import { config } from "../lib/core/config.js"
 import {
   Author,
+  AudioContent,
   Comment,
   GraphicContent,
   ImageContent,
@@ -99,11 +100,27 @@ function fixtureResult() {
   })
 }
 
-async function render(name, dayRange, outputDir) {
+function musicFixtureResult() {
+  return new ParseResult({
+    platform: { name: "qqmusic", displayName: "QQ 音乐" },
+    title: "海岸与远方",
+    author: new Author("Yunzai 音乐", { avatar: task(avatar) }),
+    url: "https://github.com/help660vip/Yunzai-video-plugin",
+    extra: { album: "旅行手记" },
+    content: [
+      new ImageContent(task(cover)),
+      "[00:12.00]听见海风穿过长街\n[00:18.00]潮汐轻轻漫过脚边\n[00:24.00]把沿途风景写成歌\n[00:30.00]与你分享每一个明天",
+      new AudioContent(new PathTask(() => { throw new Error("静态音乐展示无需下载音频") }), { duration: 236 }),
+    ],
+  })
+}
+
+async function render(name, dayRange, outputDir, result = fixtureResult()) {
   config.parser_render_type = "common"
+  config.parser_render_theme = "default"
+  config.parser_theme_dirs = []
   config.parser_day_range = dayRange
   config.parser_append_qrcode = true
-  const result = fixtureResult()
   const rendered = await renderCard(result, "common", { format: "png" })
   // Validate and encode an actual PNG; the output extension must never depend on FFmpeg.
   const png = PNG.sync.read(await fs.promises.readFile(rendered))
@@ -116,6 +133,7 @@ export async function renderFixtures(outputDir = screenshotDir) {
   try {
     await render("render-light.png", ["0:00", "24:00"], outputDir)
     await render("render-dark.png", ["0:00", "0:00"], outputDir)
+    await render("render-music.png", ["0:00", "24:00"], outputDir, musicFixtureResult())
   } finally {
     Object.assign(config, previous)
     await closeRenderer()

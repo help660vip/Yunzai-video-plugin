@@ -63,7 +63,7 @@
 | **网易云音乐** | ✓ | — | — | — | ✓ |
 | **酷狗音乐** | ✓ | — | — | — | ✓ |
 | **汽水音乐** | ✓ | — | — | — | ✓ |
-| **酷我音乐** | ✓ | — | — | — | ✓ |
+| **酷我音乐** | ✓ | ✓ | — | — | ✓ |
 | **QQ音乐** | ✓ | — | — | — | ✓ |
 
 > **标识说明**
@@ -118,13 +118,15 @@ pnpm --dir ./plugins/yunzai-video-plugin install
 - 33 个平台：统一处理短链、图文、视频、音乐、评论与楼中楼、贴纸、Live Photo、引用、投票、AI 摘要和链接卡。
 - 有序富文本：文本、图片、视频、贴纸、链接与引用保持原有顺序，支持九宫格和长文本转发。
 - 稳定下载：动态媒体 URL 使用稳定缓存键并按文件特征识别真实格式；支持 identity 编码、严格断点续传、多 CDN 轮换、音频格式自动修正、流式大小限制、重试、FFmpeg 合并、HLS 转封装和失败降级。
+- 媒体预处理：按平台与作者调整音视频倍速，可接入 B站空降辅助服务裁切或静音指定片段，处理后的媒体独立缓存。
+- 灵活发送：用组件清单选择图文、封面、视频、音频和附加链接，以及哪些内容进入合并转发；旧版发送开关继续兼容。
 - 丰富渲染：本地自定义主题、浅色 / 深色模式、统计、评论、带图投票、二维码和音乐卡；支持选择 JPEG、PNG 或 WebP，浏览器不可用时自动回退到纯文本。
 - 可选懒下载：开启后先发送解析结果，只有用户发送配置的下载命令时才下载媒体，可设置提示和超时。
 - 权限控制：群黑 / 白名单、用户黑名单、平台禁用列表，以及群管理员开启 / 关闭解析命令。
 - 轻量启动：平台注册保持固定以支持锅巴热更新，解析器实例只在首次命中时初始化；平台解析不依赖浏览器。
 - 兼容扩展：保留旧版公共 API 和配置语义，并提供统一 `DownloadFunc` 协议，其他 Yunzai 插件可继续注册自己的解析器。
 
-主题安装和模板格式见 [主题开发文档](docs/THEMES.md)。`parser_max_comments: 0` 可关闭评论请求；`parser_summary_in_forward` 与 `parser_video_in_forward` 分别控制总结卡和视频是否加入合并转发。上传遇到适配器限制时，插件会尝试单独发送媒体。
+主题安装和模板格式见 [主题开发文档](docs/THEMES.md)。`parser_max_comments: 0` 可关闭评论请求；`parser_forward_components` 可选择进入合并转发的组件。上传遇到适配器限制时，插件会尝试单独发送媒体。
 
 <details>
 <summary><strong>渲染效果</strong></summary>
@@ -134,6 +136,10 @@ pnpm --dir ./plugins/yunzai-video-plugin install
 | 浅色主题 | 深色主题 |
 | :---: | :---: |
 | <img src="docs/screenshots/render-light.png" width="420" alt="浅色主题渲染截图"> | <img src="docs/screenshots/render-dark.png" width="420" alt="深色主题渲染截图"> |
+
+音乐卡片：
+
+<img src="docs/screenshots/render-music.png" width="420" alt="音乐卡片渲染截图">
 
 `parser_render_type: default` 使用纯文本；`common`、`htmlrender` 使用 Puppeteer 信息卡；`htmlkit` 保留旧配置语义并在不可用时回退。Puppeteer 或浏览器启动失败时也会自动降级，不影响媒体发送。
 
@@ -175,11 +181,14 @@ R18 拦截默认开启，但**只检查配置列表内的海外平台**：`twitt
 | 凭据 | `parser_bili_ck`、`parser_bili_access_key`、`parser_x_ck`、`parser_ytb_ck`、`parser_xhs_ck`、`parser_zhihu_ck`、`parser_linuxdo_ck` | 对应平台 Cookie 或 B站 Access Key，可留空 |
 | 网络 | `parser_proxy`、`parser_max_retries`、`parser_max_size`、`parser_duration_maximum` | 代理、重试及下载限制 |
 | 发送 | `parser_need_upload*`、`parser_file_upload_timeout`、`parser_use_base64`、`parser_need_forward_contents`、`parser_summary_in_forward`、`parser_video_in_forward` | 上传等待时间与消息发送方式 |
+| 组件 | `parser_send_components`、`parser_forward_components` | 声明式发送与转发清单；设为 `null` 时沿用旧开关 |
 | 展示 | `parser_render_type`、`parser_render_format`、`parser_render_theme`、`parser_theme_dirs`、`parser_day_range`、字体、二维码 | 信息卡格式和附加内容 |
 | 下载 | `parser_lazy_download*`、`parser_download_command`、`parser_live_photo` | 懒下载及 Live Photo |
 | 过滤 | `parser_disabled_platforms`、`parser_blacklist_users`、群名单、R18 配置 | 解析范围和安全门 |
 | 缓存 | `parser_cache_retention_hours`、`parser_cache_max_mb` | 默认保留 24 小时，最大 1 GiB |
-| 去重 | `parser_dedup_enabled`、`parser_dedup_window_seconds` | 同机器人、同群默认 30 秒静默去重 |
+| 去重 | `parser_dedup_enabled`、`parser_dedup_window_seconds`、`parser_dedup_platforms` | 同机器人、同群默认 30 秒静默去重；可按平台选择，设为 0 秒只抑制并发重复 |
+| 预处理 | `parser_media_speedup_rules`、`parser_media_transcode_concurrency` | 按作者倍速及媒体处理并发数 |
+| 空降辅助 | `parser_bsb_api_base`、`parser_bsb_categories` | 可选 B站标注服务与参与处理的片段分类 |
 | 平台 | B站画质 / 音质 / 编码 / CDN 等 | 平台专用选项 |
 
 默认是“直接解析并下载”：
@@ -201,6 +210,19 @@ parser_download_command:
 
 `parser_need_upload` 是兼容旧版的音视频总开关。配置文件中显式设置 `parser_need_upload_audio` 或 `parser_need_upload_video` 时，独立开关优先。
 
+发送内容组件使用 `card`、`url`、`embed`、`content`、`cover`、`video`、`audio` 标识。显式配置清单时优先采用清单，总结卡片 `card` 始终保留；未选择的媒体组件不会启动下载。`parser_forward_components: []` 直接发送内容，超长文本仍按适配器限制拆分。示例：
+
+```yaml
+parser_send_components: [card, content, cover, video, audio]
+parser_forward_components: [content, cover]
+parser_dedup_platforms: null # 所有平台；[] 为不启用会话去重
+parser_media_speedup_rules:
+  - bilibili:123456:1.25
+parser_media_transcode_concurrency: 1
+```
+
+倍速规则为 `平台:作者ID:倍速`，范围为 0.1～16 倍。B站空降辅助默认关闭；同时填写 `parser_bsb_api_base` 服务地址和 `parser_bsb_categories` 分类后，才会请求标注并处理媒体。处理需要 FFmpeg，原始下载缓存会保留供其他请求复用。
+
 </details>
 
 ### Cookie 与数据安全
@@ -213,7 +235,7 @@ parser_download_command:
 - 配置 Linux Do Cookie 后，服务端轮换的会话 Cookie 会保存到 `data/linuxdo_cookies.txt`；更换账号身份 Cookie 时会自动切换会话。
 - 配置有效 B站登录凭据后，插件会同步该账号的 B站用户黑名单，并在解析前拦截其中的 UP 主内容。
 - YouTube Cookie 会转换到 `config/ytb_cookies.txt` 供 `yt-dlp` 使用。
-- 群开关、媒体缓存和渲染缓存位于 `data/`。插件启动、每天 `01:00` 及解析期间都会检查缓存；默认删除超过 24 小时的文件，并在超过 1 GiB 时优先清理最旧文件。
+- 群开关、媒体缓存和渲染缓存位于 `data/`。插件使用内存索引查询缓存，启动时从文件与元数据恢复；命中时间定期落盘。启动、每天 `01:00` 及解析期间都会检查缓存；默认清理超过 24 小时未使用的文件，并在超过 1 GiB 时优先清理最旧文件。
 - `data/` 被 Git 忽略，但 `config/config.yaml` 会被版本控制追踪，不要写入准备公开的真实凭据。
 
 ## 使用
