@@ -34,7 +34,7 @@ function mockBrowser({ width = 3, height = 3 } = {}) {
     Object.assign(page, {
       html: "", scale: 1, async setJavaScriptEnabled() {}, async setRequestInterception() {},
       async setViewport(value) { this.scale = value.deviceScaleFactor }, async goto() {},
-      async setContent(html) { this.html = html }, async evaluate() {}, async $() { return null },
+      async setContent(html) { this.html = html }, async evaluate() { return true }, async $() { return null },
       async $eval() { return { x: 0, y: 0, width, height } }, viewport() { return { deviceScaleFactor: this.scale } },
       async screenshot({ clip }) { return PNG.sync.write(new PNG({ width: Math.ceil(clip.width * this.scale), height: Math.ceil(clip.height * this.scale) })) },
     })

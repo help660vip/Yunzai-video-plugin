@@ -1,6 +1,6 @@
 {
   "name": "yunzai-plugin-parser",
-  "version": "3.5.0",
+  "version": "3.5.1",
   "description": "支持 33 个平台的 Miao-Yunzai / TRSS-Yunzai 链接分享解析插件",
   "type": "module",
   "main": "index.js",

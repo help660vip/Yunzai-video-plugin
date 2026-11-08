@@ -26,8 +26,8 @@ import {
   sendFile,
   renderContents,
 } from "./lib/core/sender.js"
-import { commandExists, sleep } from "./lib/core/utils.js"
-import { hasYtDlp, ytdlp } from "./lib/core/ytdlp.js"
+import { sleep } from "./lib/core/utils.js"
+import { detectFfmpeg, hasYtDlp, ytdlp } from "./lib/core/ytdlp.js"
 import { BilibiliParser } from "./lib/parsers/bilibili.js"
 import { YouTubeParser } from "./lib/parsers/youtube.js"
 import { biliApi } from "./lib/parsers/bilibili-api.js"
@@ -72,7 +72,7 @@ export class ParserMessagePlugin extends Plugin {
     const cleanup = await scheduleCacheCleanup({ force: true, reason: "startup" })
     log.info(`[parser] 启动缓存检查完成：清理 ${cleanup.deletedFiles || 0} 个文件`)
     log.info(`[parser] 启用平台: ${enabledPlatforms().join(", ")}`)
-    if (!commandExists("ffmpeg")) {
+    if (!detectFfmpeg()) {
       log.warn("[parser] 未检测到 ffmpeg，音视频合并、转码和 GIF 功能将不可用")
     }
     if (!hasYtDlp) {

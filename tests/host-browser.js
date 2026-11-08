@@ -1,8 +1,8 @@
 import assert from "node:assert/strict"
 import fs from "node:fs/promises"
+import os from "node:os"
 import path from "node:path"
 import { pathToFileURL, fileURLToPath } from "node:url"
-import { cacheDir } from "../lib/core/paths.js"
 import { discoverHostBrowsers } from "../lib/render/host-browser.js"
 
 const tests = []
@@ -10,7 +10,8 @@ const test = (name, run) => tests.push({ name, run })
 const isolated = { globalObject: false, moduleDiscovery: false }
 const event = host => ({ runtime: { puppeteer: host } })
 const browser = () => ({ newPage() { return { owner: this } }, isConnected() { return true }, close() { throw new Error("Host browser must not be closed") } })
-const temporary = await fs.mkdtemp(path.join(cacheDir, "host-browser-"))
+// A fixture below a real Yunzai installation would discover that host as well.
+const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "yunzai-host-browser-"))
 
 async function fixture(name, packageName = "trss-yunzai") {
   const root = path.join(temporary, name)
@@ -344,8 +345,8 @@ try {
   }
 } finally {
   const resolved = await fs.realpath(temporary)
-  const base = await fs.realpath(cacheDir)
-  if (!resolved.startsWith(base + path.sep) || !path.basename(resolved).startsWith("host-browser-")) throw new Error("Unsafe test cleanup path")
+  const base = await fs.realpath(os.tmpdir())
+  if (!resolved.startsWith(base + path.sep) || !path.basename(resolved).startsWith("yunzai-host-browser-")) throw new Error("Unsafe test cleanup path")
   await fs.rm(resolved, { recursive: true, force: true })
 }
 console.log((tests.length - failures) + "/" + tests.length + " host browser tests passed")

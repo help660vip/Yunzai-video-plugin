@@ -248,9 +248,10 @@ test("local theme assets render across tile boundaries without script or network
     assert.equal(rendered.width, 800)
     assert.equal(rendered.height, 4600)
     const rgb = (x, y) => [...rendered.data.subarray((y * rendered.width + x) * 4, (y * rendered.width + x) * 4 + 3)]
-    assert.deepEqual(rgb(10, 2199), [16, 192, 32])
-    assert.deepEqual(rgb(10, 2200), [192, 16, 32])
-    assert.deepEqual(rgb(10, 4599), [192, 16, 32])
+    // Stay clear of the blocked image's browser-specific broken-image icon.
+    assert.deepEqual(rgb(100, 2199), [16, 192, 32])
+    assert.deepEqual(rgb(100, 2200), [192, 16, 32])
+    assert.deepEqual(rgb(100, 4599), [192, 16, 32])
     assert.equal(requests, 0)
     await fs.writeFile(path.join(themeRoot, "default.html"), '{{#if broken}}')
     const fallback = await renderCard(result({ title: "Fallback" }), "common")
